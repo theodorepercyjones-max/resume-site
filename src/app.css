@@ -1,0 +1,17 @@
+@import 'tailwindcss';
+@import '@skeletonlabs/skeleton';
+@import '@skeletonlabs/skeleton-svelte';
+
+@custom-variant dark (&:is(.dark *));
+
+/* Custom theme tokens - slate navy + amber accent */
+:root {
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-serif: 'Playfair Display', Georgia, serif;
+  --color-navy: #1e293b;
+  --color-navy-light: #334155;
+  --color-accent: #d97706;
+  --color-accent-light: #fbbf24;
+  --color-accent-subtle: #fef3c7;
+  --color-cream: #faf8f5;
+}
