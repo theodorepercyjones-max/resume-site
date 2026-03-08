@@ -73,8 +73,9 @@ Watch for **trailing spaces** in env var names in the Appwrite Console — they 
 The Appwrite project ID and endpoint are public. Anyone can call `createMagicURLToken()` directly against the API for any email. Therefore:
 
 1. **Login form action** — validate email matches `ADMIN_EMAIL` server-side (UX gate, not security boundary)
-2. **Callback** — re-verify the user's email via admin SDK (`Users.get()`) BEFORE creating a session cookie. **This is the real security boundary.**
-3. **Auth guard** — validate the session is real and active against Appwrite on every admin request
+2. **Callback load** — re-verify the user's email via admin SDK (`Users.get()`) BEFORE passing credentials to the client for session creation
+3. **Cookie set endpoint** — re-verify the user is the authorized admin AND the session exists before persisting the cookie. **This is the real security boundary.**
+4. **Auth guard** — validate the session is real and active against Appwrite on every admin request
 
 ### Session Cookie Rules
 
@@ -122,22 +123,45 @@ if (!sessions.some(s => s.$id === parsed.sessionId)) {
 
 On failure, delete the cookie and redirect to login.
 
-### Callback — Email Verification + Session Creation
+### Callback — Email Verification + Client-Side Session Creation
 
+Session creation MUST happen in the user's browser (client-side SDK) so that Appwrite records the real user IP and user-agent. Creating sessions server-side with `node-appwrite` causes all sessions to show the server's IP in the Appwrite dashboard.
+
+**Server load function (`+page.server.ts`)** — verify email, pass credentials to client:
 ```ts
-// Step 1: Verify email via admin SDK BEFORE creating session
+// Verify email via admin SDK BEFORE allowing session creation
 const users = new Users(adminClient); // client with API key
 const user = await users.get(userId);
 if (user.email.toLowerCase() !== ADMIN_EMAIL) {
   redirect(302, '/auth/login?error=unauthorized');
 }
+// Return credentials to client (secret is already in the URL, single-use)
+return { userId, secret };
+```
 
-// Step 2: Create session (no API key needed — public endpoint)
-const client = new Client();
-client.setEndpoint(...).setProject(...); // NO setKey, NO setSession
-const account = new Account(client);
+**Client page (`+page.svelte`)** — create session in the browser:
+```ts
+import { getAccount } from '$lib/appwrite';
+// Create session CLIENT-SIDE so Appwrite sees the real user
+const account = getAccount();
 const session = await account.createSession(userId, secret);
-// Then set cookie with session.$id and session.secret
+// POST session info to server to persist in httpOnly cookie
+await fetch('/auth/callback/set-session', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ userId, sessionId: session.$id, secret: session.secret })
+});
+```
+
+**Server endpoint (`set-session/+server.ts`)** — verify and set cookie:
+```ts
+// Verify session exists and user is authorized admin via admin SDK
+const users = new Users(adminClient);
+const user = await users.get(userId);
+if (user.email.toLowerCase() !== ADMIN_EMAIL) return json({ error: 'Unauthorized' }, { status: 403 });
+const { sessions } = await users.listSessions(userId);
+if (!sessions.some(s => s.$id === sessionId)) return json({ error: 'Not found' }, { status: 401 });
+// Then set cookie with userId, sessionId, and secret
 ```
 
 ### Logout — Revoke via Admin SDK

@@ -1,5 +1,5 @@
 import { redirect } from '@sveltejs/kit';
-import { Client, Account, Users } from 'node-appwrite';
+import { Client, Users } from 'node-appwrite';
 import { env as publicEnv } from '$env/dynamic/public';
 import { env } from '$env/dynamic/private';
 import type { PageServerLoad } from './$types';
@@ -13,17 +13,15 @@ function getAdminClient() {
 	return client;
 }
 
-export const load: PageServerLoad = async ({ url, cookies }) => {
+export const load: PageServerLoad = async ({ url }) => {
 	const userId = url.searchParams.get('userId');
 	const secret = url.searchParams.get('secret');
-
-	const isLocalhost = url.hostname === 'localhost' || url.hostname === '127.0.0.1';
 
 	if (!userId || !secret) {
 		redirect(302, '/auth/login?error=invalid');
 	}
 
-	// Step 1: Verify the user's email is authorized BEFORE creating a session.
+	// Verify the user's email is authorized BEFORE allowing session creation.
 	// This prevents bypass via direct Appwrite API calls — anyone can call
 	// createMagicURLToken against the public Appwrite API, but only the
 	// authorized email will pass this server-side check.
@@ -40,31 +38,8 @@ export const load: PageServerLoad = async ({ url, cookies }) => {
 		redirect(302, '/auth/login?error=failed');
 	}
 
-	// Step 2: Create session from magic URL token
-	try {
-		const client = new Client();
-		client
-			.setEndpoint(publicEnv.PUBLIC_APPWRITE_ENDPOINT)
-			.setProject(publicEnv.PUBLIC_APPWRITE_PROJECT_ID);
-
-		const account = new Account(client);
-		const session = await account.createSession(userId, secret);
-
-		cookies.set('session', JSON.stringify({
-			userId,
-			sessionId: session.$id,
-			secret: session.secret
-		}), {
-			path: '/',
-			httpOnly: true,
-			sameSite: 'lax',
-			secure: !isLocalhost,
-			maxAge: 60 * 60 * 24 * 7 // 7 days
-		});
-
-		redirect(302, '/admin');
-	} catch (err: any) {
-		if (err?.status === 302) throw err;
-		redirect(302, '/auth/login?error=failed');
-	}
+	// Pass credentials to client for client-side session creation.
+	// The secret is the magic URL token (already in the URL); once consumed
+	// by createSession it cannot be reused.
+	return { userId, secret };
 };
