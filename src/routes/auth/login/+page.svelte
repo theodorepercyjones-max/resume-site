@@ -11,7 +11,10 @@
 	const errorMessages: Record<string, string> = {
 		unauthorized: 'This email is not authorized to access the admin area.',
 		invalid: 'Invalid login link. Please try again.',
-		failed: 'Login failed. Please try again.'
+		failed: 'Login failed. Please try again.',
+		config: 'Server configuration error. Environment variables missing.',
+		session: 'Failed to create session from magic link token.',
+		verify: 'Failed to verify account after session creation.'
 	};
 
 	let urlError = $derived(page.url.searchParams.get('error'));
