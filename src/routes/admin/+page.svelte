@@ -109,7 +109,7 @@
 	</button>
 	{#if openSection === 'work'}
 		<div class="px-6 pb-6 border-t border-slate-100">
-			{#each data.workExperiences as exp, i}
+			{#each data.workExperiences as exp, i (exp.$id)}
 				<div class="border border-slate-100 rounded-lg p-4 mt-4">
 					<div class="flex items-center justify-between mb-3">
 						<span class="text-xs text-slate-400">#{i + 1}</span>
@@ -228,7 +228,7 @@
 	</button>
 	{#if openSection === 'freelance'}
 		<div class="px-6 pb-6 border-t border-slate-100">
-			{#each data.freelanceWorks as work, i}
+			{#each data.freelanceWorks as work, i (work.$id)}
 				<div class="border border-slate-100 rounded-lg p-4 mt-4">
 					<div class="flex items-center justify-between mb-3">
 						<span class="text-xs text-slate-400">#{i + 1}</span>
@@ -334,7 +334,7 @@
 	</button>
 	{#if openSection === 'education'}
 		<div class="px-6 pb-6 border-t border-slate-100">
-			{#each data.educations as edu, i}
+			{#each data.educations as edu, i (edu.$id)}
 				<div class="border border-slate-100 rounded-lg p-4 mt-4">
 					<div class="flex items-center justify-between mb-3">
 						<span class="text-xs text-slate-400">#{i + 1}</span>
@@ -452,7 +452,7 @@
 	</button>
 	{#if openSection === 'todos'}
 		<div class="px-6 pb-6 border-t border-slate-100">
-			{#each data.todos as todo}
+			{#each data.todos as todo (todo.$id)}
 				<div class="flex items-center gap-3 py-2 border-b border-slate-100 last:border-b-0">
 					<form method="POST" action="?/toggleTodo" use:enhance class="flex items-center">
 						<input type="hidden" name="doc_id" value={todo.$id} />
