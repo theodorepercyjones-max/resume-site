@@ -1,15 +1,15 @@
 import { json } from '@sveltejs/kit';
-import { env } from '$env/dynamic/private';
-import { env as publicEnv } from '$env/dynamic/public';
+import { APPWRITE_API_KEY, APPWRITE_DATABASE_ID } from '$env/static/private';
+import { PUBLIC_APPWRITE_ENDPOINT, PUBLIC_APPWRITE_PROJECT_ID } from '$env/static/public';
 import { getProfile, getWorkExperiences, getFreelanceWorks, getEducations } from '$lib/server/appwrite';
 
 export async function GET() {
 	const envCheck = {
-		hasApiKey: !!env.APPWRITE_API_KEY,
-		apiKeyPrefix: env.APPWRITE_API_KEY?.substring(0, 12) + '...',
-		databaseId: env.APPWRITE_DATABASE_ID,
-		endpoint: publicEnv.PUBLIC_APPWRITE_ENDPOINT,
-		projectId: publicEnv.PUBLIC_APPWRITE_PROJECT_ID
+		hasApiKey: !!APPWRITE_API_KEY,
+		apiKeyPrefix: APPWRITE_API_KEY?.substring(0, 12) + '...',
+		databaseId: APPWRITE_DATABASE_ID,
+		endpoint: PUBLIC_APPWRITE_ENDPOINT,
+		projectId: PUBLIC_APPWRITE_PROJECT_ID
 	};
 
 	let profile, workExperiences, freelanceWorks, educations;
