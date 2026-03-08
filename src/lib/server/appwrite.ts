@@ -56,7 +56,8 @@ export async function getWorkExperiences() {
 			Query.limit(100)
 		]);
 		return result.documents;
-	} catch {
+	} catch (e) {
+		console.error('getWorkExperiences error:', e);
 		return [];
 	}
 }
@@ -91,7 +92,8 @@ export async function getFreelanceWorks() {
 			Query.limit(100)
 		]);
 		return result.documents;
-	} catch {
+	} catch (e) {
+		console.error('getFreelanceWorks error:', e);
 		return [];
 	}
 }
@@ -126,7 +128,8 @@ export async function getEducations() {
 			Query.limit(100)
 		]);
 		return result.documents;
-	} catch {
+	} catch (e) {
+		console.error('getEducations error:', e);
 		return [];
 	}
 }
