@@ -64,6 +64,10 @@ Watch for **trailing spaces** in env var names in the Appwrite Console — they 
 
 ## Authentication (Magic URL)
 
+### CRITICAL: Use Admin SDK for All Server-Side Auth
+
+`node-appwrite`'s `client.setSession()` + `account.get()` **does not work on Appwrite Cloud** — returns `401 User (role: guests) missing scopes`. All server-side session operations must use the admin SDK (`Users` API with API key) instead.
+
 ### Security Model — Defense in Depth
 
 The Appwrite project ID and endpoint are public. Anyone can call `createMagicURLToken()` directly against the API for any email. Therefore:
@@ -88,7 +92,7 @@ cookies.set('session', JSON.stringify({ userId, sessionId, secret }), {
 - **`secure`** — `true` in production, `false` only on localhost for dev
 - **`sameSite: 'lax'`** — CSRF protection while allowing magic link redirects
 
-### Auth Guard — Validate, Don't Just Check Existence
+### Auth Guard — Validate via Admin SDK
 
 Never do this:
 ```ts
@@ -96,32 +100,68 @@ Never do this:
 if (!cookies.get('session')) redirect(302, '/auth/login');
 ```
 
+Never do this either:
+```ts
+// BAD: setSession does NOT work with node-appwrite on Appwrite Cloud
+client.setSession(parsed.secret);
+const account = new Account(client);
+await account.get(); // 401 — "User (role: guests) missing scopes"
+```
+
 Always do this:
 ```ts
-// GOOD: verify session is real and active
-const parsed = JSON.parse(cookies.get('session'));
+// GOOD: use admin SDK to verify session exists
 const client = new Client();
-client.setEndpoint(...).setProject(...).setSession(parsed.secret);
-const account = new Account(client);
-await account.get(); // throws if session is invalid/expired
+client.setEndpoint(...).setProject(...).setKey(API_KEY);
+const users = new Users(client);
+const { sessions } = await users.listSessions(parsed.userId);
+if (!sessions.some(s => s.$id === parsed.sessionId)) {
+  throw new Error('Session not found');
+}
 ```
 
 On failure, delete the cookie and redirect to login.
 
-### Logout — Revoke the Session
+### Callback — Email Verification + Session Creation
+
+```ts
+// Step 1: Verify email via admin SDK BEFORE creating session
+const users = new Users(adminClient); // client with API key
+const user = await users.get(userId);
+if (user.email.toLowerCase() !== ADMIN_EMAIL) {
+  redirect(302, '/auth/login?error=unauthorized');
+}
+
+// Step 2: Create session (no API key needed — public endpoint)
+const client = new Client();
+client.setEndpoint(...).setProject(...); // NO setKey, NO setSession
+const account = new Account(client);
+const session = await account.createSession(userId, secret);
+// Then set cookie with session.$id and session.secret
+```
+
+### Logout — Revoke via Admin SDK
 
 Always invalidate the session on Appwrite before deleting the cookie:
 ```ts
-await account.deleteSession(parsed.sessionId);
+const users = new Users(adminClient); // client with API key
+await users.deleteSession(parsed.userId, parsed.sessionId);
 cookies.delete('session', { path: '/' });
 ```
 
 Wrap in try/catch — the session may already be expired.
 
+### API Key Safety
+
+- `APPWRITE_API_KEY` must ONLY be used in `.server.ts` files
+- Import from `$env/dynamic/private` — SvelteKit blocks this from client bundles
+- Never pass the API key to any client-side code or component props
+
 ### Appwrite Console Setup
 
 1. Auth → Settings → Security: Enable Magic URL
 2. Overview → Integrations → Platforms: Add Web platform with your domain
+3. Auth → Security → Session limit: Configure max concurrent sessions (default: 10)
 
 ## Svelte 5 Patterns
 
@@ -157,6 +197,8 @@ Do NOT import Skeleton theme CSS files — the base import is sufficient. Theme 
 | Data loads locally but not deployed | Create indexes for queried fields |
 | Env vars return undefined | Check for trailing spaces in Console; read inside functions not module level |
 | Auth callback fails | Add domain to Appwrite Web Platform |
+| `setSession` + `account.get()` returns 401 | Use admin SDK (`Users` API with API key) instead — `setSession` does not work with `node-appwrite` on Appwrite Cloud |
+| Login succeeds but admin redirects to login | Auth guard also needs admin SDK, not `setSession` |
 
 ## Commands
 
