@@ -255,46 +255,111 @@ db.createDocument(DB_ID, COLLECTION_ID, 'unique()', data);
 ### Flow
 
 1. User enters email on login page
-2. Client-side SDK calls `account.createMagicURLToken()`
-3. User clicks link in email → redirected to `/auth/callback?userId=...&secret=...`
-4. Server-side callback creates session, stores in httpOnly cookie
-5. Admin routes check for cookie in layout server load
+2. **Server-side form action validates email** against `ADMIN_EMAIL` env var
+3. If authorized, client-side SDK calls `account.createMagicURLToken()`
+4. User clicks link in email → redirected to `/auth/callback?userId=...&secret=...`
+5. **Server-side callback verifies email again** using admin SDK (`Users.get()`) before setting cookie
+6. Admin routes check for cookie in layout server load
 
-### Login Page (Client-Side)
+### CRITICAL: Server-Side Email Validation (Defense in Depth)
 
-```typescript
-const account = getAccount();
-await account.createMagicURLToken(
-  'unique()',
-  email,
-  `${window.location.origin}/auth/callback`
-);
-```
+Appwrite's Magic URL authentication does **not** restrict which email addresses can request login tokens. The `createMagicURLToken()` method sends a magic link to **any valid email address** — this is by design, as Appwrite treats it as a signup/login mechanism for any user.
 
-### Callback (Server-Side)
+This means validating the email **only on the login form is not sufficient**. An attacker can bypass the login form entirely:
+
+1. The Appwrite project ID and endpoint are public (embedded in client-side JS)
+2. Anyone can call `createMagicURLToken()` directly via the Appwrite API or browser console
+3. They receive a valid magic link and click it
+4. The callback creates a session — if it doesn't check the email, the attacker gets admin access
+
+**You must validate the email at the callback level** using the server-side admin SDK:
 
 ```typescript
 // src/routes/auth/callback/+page.server.ts
-import { Client, Account } from 'node-appwrite';
+import { Client, Account, Users } from 'node-appwrite';
+import { env } from '$env/dynamic/private';
+import { env as publicEnv } from '$env/dynamic/public';
 
-const client = new Client();
-client.setEndpoint(env.PUBLIC_APPWRITE_ENDPOINT).setProject(env.PUBLIC_APPWRITE_PROJECT_ID);
+export const load = async ({ url, cookies }) => {
+  const userId = url.searchParams.get('userId');
+  const secret = url.searchParams.get('secret');
 
-const account = new Account(client);
-const session = await account.createSession(userId, secret);
+  if (!userId || !secret) redirect(302, '/auth/login?error=invalid');
 
-cookies.set('session', JSON.stringify({
-  userId,
-  sessionId: session.$id,
-  secret: session.secret
-}), {
-  path: '/',
-  httpOnly: true,
-  sameSite: 'lax',
-  secure: false,  // set to true in production with HTTPS
-  maxAge: 60 * 60 * 24 * 7
-});
+  // SECURITY: Verify email is authorized BEFORE creating session cookie.
+  // Uses admin API key to look up the user — this cannot be bypassed.
+  const adminClient = new Client();
+  adminClient
+    .setEndpoint(publicEnv.PUBLIC_APPWRITE_ENDPOINT)
+    .setProject(publicEnv.PUBLIC_APPWRITE_PROJECT_ID)
+    .setKey(env.APPWRITE_API_KEY);
+
+  const users = new Users(adminClient);
+  const user = await users.get(userId);
+  const adminEmail = env.ADMIN_EMAIL?.trim().toLowerCase();
+
+  if (!adminEmail || user.email.toLowerCase() !== adminEmail) {
+    redirect(302, '/auth/login?error=unauthorized');
+  }
+
+  // Only AFTER email is verified: create session and set cookie
+  const client = new Client();
+  client.setEndpoint(publicEnv.PUBLIC_APPWRITE_ENDPOINT).setProject(publicEnv.PUBLIC_APPWRITE_PROJECT_ID);
+
+  const account = new Account(client);
+  const session = await account.createSession(userId, secret);
+
+  cookies.set('session', JSON.stringify({
+    userId,
+    sessionId: session.$id,
+    secret: session.secret
+  }), {
+    path: '/',
+    httpOnly: true,
+    sameSite: 'lax',
+    secure: false,
+    maxAge: 60 * 60 * 24 * 7
+  });
+
+  redirect(302, '/admin');
+};
 ```
+
+### Why Both Checks Matter
+
+| Layer | What it does | What it prevents |
+|-------|-------------|-----------------|
+| Login form action | Validates email against `ADMIN_EMAIL` before sending magic link | Unauthorized users from receiving magic link emails via the UI |
+| Callback email check | Validates email via admin SDK (`Users.get()`) before setting session cookie | Bypass via direct Appwrite API calls (browser console, curl, etc.) |
+| Admin layout guard | Checks session cookie exists | Unauthenticated access to admin routes |
+
+The callback check is the **true security boundary**. The login form check is a UX improvement (shows a clear error message) and reduces unnecessary magic link emails, but it alone is not sufficient.
+
+### Login Page (Server Validation + Client Token)
+
+```typescript
+// src/routes/auth/login/+page.server.ts
+import { fail } from '@sveltejs/kit';
+import { env } from '$env/dynamic/private';
+
+export const actions = {
+  default: async ({ request }) => {
+    const data = await request.formData();
+    const email = data.get('email')?.toString().trim().toLowerCase();
+
+    if (!email) return fail(400, { error: 'Please enter an email address.' });
+
+    const adminEmail = env.ADMIN_EMAIL?.trim().toLowerCase();
+    if (!adminEmail || email !== adminEmail) {
+      return fail(403, { error: 'This email is not authorized to access the admin area.' });
+    }
+
+    return { validated: true };
+  }
+};
+```
+
+The client then calls `createMagicURLToken()` only after server validation succeeds, using SvelteKit's `use:enhance`.
 
 ### Auth Guard
 
@@ -312,6 +377,12 @@ export const load = async ({ cookies }) => {
 
 1. **Auth → Settings → Security**: Enable Magic URL authentication
 2. **Overview → Integrations → Platforms**: Add a Web platform with your domain (e.g., `resume-site-theodore.appwrite.network`)
+
+### Email Subject Formatting
+
+The magic link email subject uses your **Appwrite project name**. If the project name contains an apostrophe (e.g., `Theo's Resume Site`), Appwrite HTML-encodes it in the email subject, producing `Theo&#039;s Resume Site`. To fix this, edit the project name in the Appwrite Console to either:
+- Use a curly apostrophe: `Theo\u2019s Resume Site`
+- Remove the apostrophe: `Theos Resume Site` or `Theo Jones Resume Site`
 
 ---
 
