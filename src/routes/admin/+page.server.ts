@@ -27,7 +27,8 @@ export const actions: Actions = {
 			location: form.get('location') as string || '',
 			nationality: form.get('nationality') as string || '',
 			seeking_role: form.get('seeking_role') as string || '',
-			freelance_status: form.get('freelance_status') as string || 'not_accepting'
+			freelance_status: form.get('freelance_status') as string || 'not_accepting',
+			source_code_url: form.get('source_code_url') as string || ''
 		};
 
 		try {

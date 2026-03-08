@@ -159,5 +159,10 @@
 </main>
 
 <footer class="text-center py-8 mt-8 border-t border-slate-200 text-slate-400 text-sm bg-[var(--color-cream)]">
-	&copy; {new Date().getFullYear()} Theodore Jones
+	<div>&copy; {new Date().getFullYear()} {fullName}</div>
+	{#if data.profile?.source_code_url}
+		<div class="mt-1">
+			<a href={data.profile.source_code_url} target="_blank" rel="noopener" class="text-slate-400 hover:text-[var(--color-accent)] transition-colors">View source code</a>
+		</div>
+	{/if}
 </footer>
