@@ -1,10 +1,9 @@
 <script lang="ts">
 	let { data } = $props();
-	const { profile, workExperiences, freelanceWorks, educations } = data;
 
-	const fullName = profile?.full_name || 'Theodore Jones';
-	const title = profile?.title || 'IT Professional';
-	const location = profile?.location || 'Willow Grove, PA, USA';
+	let fullName = $derived(data.profile?.full_name || 'Theodore Jones');
+	let title = $derived(data.profile?.title || 'IT Professional');
+	let location = $derived(data.profile?.location || 'Willow Grove, PA, USA');
 </script>
 
 <svelte:head>
@@ -22,14 +21,14 @@
 				<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 1118 0z"/><circle cx="12" cy="10" r="3"/></svg>
 				{location}
 			</span>
-			{#if profile?.nationality}
+			{#if data.profile?.nationality}
 				<span class="flex items-center gap-1.5">
 					<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>
-					{profile.nationality}
+					{data.profile.nationality}
 				</span>
 			{/if}
-			{#if profile?.seeking_role}
-				<span class="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-800">{profile.seeking_role}</span>
+			{#if data.profile?.seeking_role}
+				<span class="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-800">{data.profile.seeking_role}</span>
 			{/if}
 		</div>
 	</div>
@@ -37,37 +36,37 @@
 
 <main class="max-w-[860px] mx-auto px-6 bg-[var(--color-cream)]">
 	<!-- Professional Summary -->
-	{#if profile?.summary}
+	{#if data.profile?.summary}
 		<section class="my-10">
 			<div class="flex items-center gap-2 mb-5 pb-2 border-b-2 border-slate-200">
 				<span class="w-1 h-6 bg-[var(--color-accent)] rounded-sm"></span>
 				<h2 class="font-[var(--font-serif)] text-2xl text-[var(--color-navy)] m-0">Professional Summary</h2>
 			</div>
 			<div class="bg-white rounded-lg p-6 shadow-sm text-slate-600 leading-relaxed prose max-w-none">
-				{@html profile.summary}
+				{@html data.profile.summary}
 			</div>
 		</section>
 	{/if}
 
 	<!-- Freelance Work -->
-	{#if freelanceWorks.length > 0}
+	{#if data.freelanceWorks.length > 0}
 		<section class="my-10">
 			<div class="flex items-center gap-2 mb-5 pb-2 border-b-2 border-slate-200">
 				<span class="w-1 h-6 bg-[var(--color-accent)] rounded-sm"></span>
 				<h2 class="font-[var(--font-serif)] text-2xl text-[var(--color-navy)] m-0">Freelance Work</h2>
 			</div>
 
-			{#if profile?.freelance_status === 'not_accepting'}
+			{#if data.profile?.freelance_status === 'not_accepting'}
 				<div class="bg-amber-50 border border-amber-200 rounded-lg px-5 py-4 mb-5 text-sm text-amber-800">
 					Not currently accepting new freelance clients.
 				</div>
-			{:else if profile?.freelance_status === 'accepting'}
+			{:else if data.profile?.freelance_status === 'accepting'}
 				<div class="bg-emerald-50 border border-emerald-200 rounded-lg px-5 py-4 mb-5 text-sm text-emerald-800">
 					Currently accepting new freelance clients.
 				</div>
 			{/if}
 
-			{#each freelanceWorks as work}
+			{#each data.freelanceWorks as work}
 				<div class="bg-white rounded-lg p-6 mb-4 shadow-sm border-l-3 border-transparent hover:shadow-md hover:border-l-[var(--color-accent)] transition-all">
 					<div class="flex justify-between items-start flex-wrap gap-2 mb-2">
 						<div>
@@ -94,13 +93,13 @@
 	{/if}
 
 	<!-- Work Experience -->
-	{#if workExperiences.length > 0}
+	{#if data.workExperiences.length > 0}
 		<section class="my-10">
 			<div class="flex items-center gap-2 mb-5 pb-2 border-b-2 border-slate-200">
 				<span class="w-1 h-6 bg-[var(--color-accent)] rounded-sm"></span>
 				<h2 class="font-[var(--font-serif)] text-2xl text-[var(--color-navy)] m-0">Work Experience</h2>
 			</div>
-			{#each workExperiences as exp}
+			{#each data.workExperiences as exp}
 				<div class="bg-white rounded-lg p-6 mb-4 shadow-sm border-l-3 border-transparent hover:shadow-md hover:border-l-[var(--color-accent)] transition-all">
 					<div class="flex justify-between items-start flex-wrap gap-2 mb-2">
 						<div>
@@ -123,13 +122,13 @@
 	{/if}
 
 	<!-- Education -->
-	{#if educations.length > 0}
+	{#if data.educations.length > 0}
 		<section class="my-10">
 			<div class="flex items-center gap-2 mb-5 pb-2 border-b-2 border-slate-200">
 				<span class="w-1 h-6 bg-[var(--color-accent)] rounded-sm"></span>
 				<h2 class="font-[var(--font-serif)] text-2xl text-[var(--color-navy)] m-0">Education</h2>
 			</div>
-			{#each educations as edu}
+			{#each data.educations as edu}
 				<div class="bg-white rounded-lg p-6 mb-4 shadow-sm border-l-3 border-transparent hover:shadow-md hover:border-l-[var(--color-accent)] transition-all">
 					<div class="flex justify-between items-start flex-wrap gap-2 mb-2">
 						<div>

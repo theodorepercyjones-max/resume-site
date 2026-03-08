@@ -5,7 +5,6 @@ import {
 	getEducations, createEducation, updateEducation, deleteEducation,
 	getTodos, createTodo, updateTodo, deleteTodo
 } from '$lib/server/appwrite';
-import { fail } from '@sveltejs/kit';
 import type { PageServerLoad, Actions } from './$types';
 
 export const load: PageServerLoad = async () => {

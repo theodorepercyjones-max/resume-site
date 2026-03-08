@@ -1,6 +1,5 @@
 <script lang="ts">
 	import { getAccount } from '$lib/appwrite';
-	import { PUBLIC_APPWRITE_ENDPOINT, PUBLIC_APPWRITE_PROJECT_ID } from '$env/static/public';
 
 	let email = $state('');
 	let message = $state('');

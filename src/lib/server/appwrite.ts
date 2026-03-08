@@ -1,8 +1,10 @@
 import { Client, Databases, Query } from 'node-appwrite';
-import { APPWRITE_API_KEY, APPWRITE_DATABASE_ID } from '$env/static/private';
-import { PUBLIC_APPWRITE_ENDPOINT, PUBLIC_APPWRITE_PROJECT_ID } from '$env/static/public';
+import { env } from '$env/dynamic/private';
+import { env as publicEnv } from '$env/dynamic/public';
 
-const DB_ID = APPWRITE_DATABASE_ID;
+function getDbId() {
+	return env.APPWRITE_DATABASE_ID;
+}
 
 // Table IDs
 const PROFILE = 'profile';
@@ -13,7 +15,7 @@ const TODOS = 'todos';
 
 function getClient() {
 	const client = new Client();
-	client.setEndpoint(PUBLIC_APPWRITE_ENDPOINT).setProject(PUBLIC_APPWRITE_PROJECT_ID).setKey(APPWRITE_API_KEY);
+	client.setEndpoint(publicEnv.PUBLIC_APPWRITE_ENDPOINT).setProject(publicEnv.PUBLIC_APPWRITE_PROJECT_ID).setKey(env.APPWRITE_API_KEY);
 	return client;
 }
 
@@ -26,7 +28,7 @@ function getDb() {
 export async function getProfile() {
 	const db = getDb();
 	try {
-		const result = await db.listDocuments(DB_ID, PROFILE, [Query.limit(1)]);
+		const result = await db.listDocuments(getDbId(), PROFILE, [Query.limit(1)]);
 		if (result.total > 0) return result.documents[0];
 	} catch {
 		// no profile yet
@@ -36,12 +38,12 @@ export async function getProfile() {
 
 export async function updateProfile(docId: string, data: Record<string, unknown>) {
 	const db = getDb();
-	return db.updateDocument(DB_ID, PROFILE, docId, data);
+	return db.updateDocument(getDbId(), PROFILE, docId, data);
 }
 
 export async function createProfile(data: Record<string, unknown>) {
 	const db = getDb();
-	return db.createDocument(DB_ID, PROFILE, 'unique()', data);
+	return db.createDocument(getDbId(), PROFILE, 'unique()', data);
 }
 
 // --- Work Experience ---
@@ -49,7 +51,7 @@ export async function createProfile(data: Record<string, unknown>) {
 export async function getWorkExperiences() {
 	const db = getDb();
 	try {
-		const result = await db.listDocuments(DB_ID, WORK_EXPERIENCE, [
+		const result = await db.listDocuments(getDbId(), WORK_EXPERIENCE, [
 			Query.orderAsc('sort_order'),
 			Query.limit(100)
 		]);
@@ -61,22 +63,22 @@ export async function getWorkExperiences() {
 
 export async function getWorkExperience(docId: string) {
 	const db = getDb();
-	return db.getDocument(DB_ID, WORK_EXPERIENCE, docId);
+	return db.getDocument(getDbId(), WORK_EXPERIENCE, docId);
 }
 
 export async function createWorkExperience(data: Record<string, unknown>) {
 	const db = getDb();
-	return db.createDocument(DB_ID, WORK_EXPERIENCE, 'unique()', data);
+	return db.createDocument(getDbId(), WORK_EXPERIENCE, 'unique()', data);
 }
 
 export async function updateWorkExperience(docId: string, data: Record<string, unknown>) {
 	const db = getDb();
-	return db.updateDocument(DB_ID, WORK_EXPERIENCE, docId, data);
+	return db.updateDocument(getDbId(), WORK_EXPERIENCE, docId, data);
 }
 
 export async function deleteWorkExperience(docId: string) {
 	const db = getDb();
-	return db.deleteDocument(DB_ID, WORK_EXPERIENCE, docId);
+	return db.deleteDocument(getDbId(), WORK_EXPERIENCE, docId);
 }
 
 // --- Freelance Work ---
@@ -84,7 +86,7 @@ export async function deleteWorkExperience(docId: string) {
 export async function getFreelanceWorks() {
 	const db = getDb();
 	try {
-		const result = await db.listDocuments(DB_ID, FREELANCE_WORK, [
+		const result = await db.listDocuments(getDbId(), FREELANCE_WORK, [
 			Query.orderAsc('sort_order'),
 			Query.limit(100)
 		]);
@@ -96,22 +98,22 @@ export async function getFreelanceWorks() {
 
 export async function getFreelanceWork(docId: string) {
 	const db = getDb();
-	return db.getDocument(DB_ID, FREELANCE_WORK, docId);
+	return db.getDocument(getDbId(), FREELANCE_WORK, docId);
 }
 
 export async function createFreelanceWork(data: Record<string, unknown>) {
 	const db = getDb();
-	return db.createDocument(DB_ID, FREELANCE_WORK, 'unique()', data);
+	return db.createDocument(getDbId(), FREELANCE_WORK, 'unique()', data);
 }
 
 export async function updateFreelanceWork(docId: string, data: Record<string, unknown>) {
 	const db = getDb();
-	return db.updateDocument(DB_ID, FREELANCE_WORK, docId, data);
+	return db.updateDocument(getDbId(), FREELANCE_WORK, docId, data);
 }
 
 export async function deleteFreelanceWork(docId: string) {
 	const db = getDb();
-	return db.deleteDocument(DB_ID, FREELANCE_WORK, docId);
+	return db.deleteDocument(getDbId(), FREELANCE_WORK, docId);
 }
 
 // --- Education ---
@@ -119,7 +121,7 @@ export async function deleteFreelanceWork(docId: string) {
 export async function getEducations() {
 	const db = getDb();
 	try {
-		const result = await db.listDocuments(DB_ID, EDUCATION, [
+		const result = await db.listDocuments(getDbId(), EDUCATION, [
 			Query.orderAsc('sort_order'),
 			Query.limit(100)
 		]);
@@ -131,22 +133,22 @@ export async function getEducations() {
 
 export async function getEducation(docId: string) {
 	const db = getDb();
-	return db.getDocument(DB_ID, EDUCATION, docId);
+	return db.getDocument(getDbId(), EDUCATION, docId);
 }
 
 export async function createEducation(data: Record<string, unknown>) {
 	const db = getDb();
-	return db.createDocument(DB_ID, EDUCATION, 'unique()', data);
+	return db.createDocument(getDbId(), EDUCATION, 'unique()', data);
 }
 
 export async function updateEducation(docId: string, data: Record<string, unknown>) {
 	const db = getDb();
-	return db.updateDocument(DB_ID, EDUCATION, docId, data);
+	return db.updateDocument(getDbId(), EDUCATION, docId, data);
 }
 
 export async function deleteEducation(docId: string) {
 	const db = getDb();
-	return db.deleteDocument(DB_ID, EDUCATION, docId);
+	return db.deleteDocument(getDbId(), EDUCATION, docId);
 }
 
 // --- Todos ---
@@ -154,7 +156,7 @@ export async function deleteEducation(docId: string) {
 export async function getTodos() {
 	const db = getDb();
 	try {
-		const result = await db.listDocuments(DB_ID, TODOS, [
+		const result = await db.listDocuments(getDbId(), TODOS, [
 			Query.orderAsc('sort_order'),
 			Query.limit(100)
 		]);
@@ -166,15 +168,15 @@ export async function getTodos() {
 
 export async function createTodo(data: Record<string, unknown>) {
 	const db = getDb();
-	return db.createDocument(DB_ID, TODOS, 'unique()', data);
+	return db.createDocument(getDbId(), TODOS, 'unique()', data);
 }
 
 export async function updateTodo(docId: string, data: Record<string, unknown>) {
 	const db = getDb();
-	return db.updateDocument(DB_ID, TODOS, docId, data);
+	return db.updateDocument(getDbId(), TODOS, docId, data);
 }
 
 export async function deleteTodo(docId: string) {
 	const db = getDb();
-	return db.deleteDocument(DB_ID, TODOS, docId);
+	return db.deleteDocument(getDbId(), TODOS, docId);
 }
