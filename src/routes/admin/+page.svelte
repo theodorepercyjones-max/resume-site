@@ -76,8 +76,8 @@
 						<input type="text" id="nationality" name="nationality" value={data.profile?.nationality || ''} class="w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:border-[var(--color-accent)] focus:outline-none focus:ring-2 focus:ring-amber-100" />
 					</div>
 					<div>
-						<label for="seeking_role" class="block text-sm font-semibold text-slate-600 mb-1">Seeking Role</label>
-						<input type="text" id="seeking_role" name="seeking_role" value={data.profile?.seeking_role || ''} class="w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:border-[var(--color-accent)] focus:outline-none focus:ring-2 focus:ring-amber-100" />
+						<label for="seeking_role" class="block text-sm font-semibold text-slate-600 mb-1">Desired Employment Type</label>
+						<input type="text" id="seeking_role" name="seeking_role" value={data.profile?.seeking_role || ''} placeholder="e.g. Full Time W2, Contract, Part Time" class="w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:border-[var(--color-accent)] focus:outline-none focus:ring-2 focus:ring-amber-100" />
 					</div>
 					<div>
 						<label for="freelance_status" class="block text-sm font-semibold text-slate-600 mb-1">Freelance Status</label>

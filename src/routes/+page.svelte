@@ -45,8 +45,9 @@
 						</span>
 					{/if}
 					{#if data.profile?.seeking_role}
-						<span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-800">
-							{data.profile.seeking_role}
+						<span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800">
+							<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+							Seeking: {data.profile.seeking_role}
 						</span>
 					{/if}
 				</div>
