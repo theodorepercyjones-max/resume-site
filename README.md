@@ -50,6 +50,10 @@ npm run build    # Production build
 npm run preview  # Preview production build
 ```
 
+## Support
+
+If you use this project for your own site, consider leaving a tip: [ko-fi.com/theopjones](https://ko-fi.com/theopjones)
+
 ## License
 
 AGPL-3.0 -- see [LICENSE](LICENSE).
