@@ -1,6 +1,7 @@
 import { redirect } from '@sveltejs/kit';
-import { Client, Account } from 'node-appwrite';
+import { Client, Users } from 'node-appwrite';
 import { env as publicEnv } from '$env/dynamic/public';
+import { env } from '$env/dynamic/private';
 import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ cookies }) => {
@@ -12,10 +13,10 @@ export const load: PageServerLoad = async ({ cookies }) => {
 			client
 				.setEndpoint(publicEnv.PUBLIC_APPWRITE_ENDPOINT)
 				.setProject(publicEnv.PUBLIC_APPWRITE_PROJECT_ID)
-				.setSession(parsed.secret);
+				.setKey(env.APPWRITE_API_KEY);
 
-			const account = new Account(client);
-			await account.deleteSession(parsed.sessionId);
+			const users = new Users(client);
+			await users.deleteSession(parsed.userId, parsed.sessionId);
 		} catch {
 			// Session may already be expired; proceed with cookie cleanup
 		}

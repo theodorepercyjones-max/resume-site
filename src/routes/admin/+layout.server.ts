@@ -1,6 +1,7 @@
 import { redirect } from '@sveltejs/kit';
-import { Client, Account } from 'node-appwrite';
+import { Client, Users } from 'node-appwrite';
 import { env as publicEnv } from '$env/dynamic/public';
+import { env } from '$env/dynamic/private';
 import type { LayoutServerLoad } from './$types';
 
 export const load: LayoutServerLoad = async ({ cookies }) => {
@@ -22,10 +23,13 @@ export const load: LayoutServerLoad = async ({ cookies }) => {
 		client
 			.setEndpoint(publicEnv.PUBLIC_APPWRITE_ENDPOINT)
 			.setProject(publicEnv.PUBLIC_APPWRITE_PROJECT_ID)
-			.setSession(parsed.secret);
+			.setKey(env.APPWRITE_API_KEY);
 
-		const account = new Account(client);
-		await account.get();
+		const users = new Users(client);
+		const { sessions } = await users.listSessions(parsed.userId);
+		if (!sessions.some((s: { $id: string }) => s.$id === parsed.sessionId)) {
+			throw new Error('Session not found');
+		}
 	} catch {
 		cookies.delete('session', { path: '/' });
 		redirect(302, '/auth/login');
