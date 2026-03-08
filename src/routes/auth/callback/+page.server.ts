@@ -1,6 +1,6 @@
 import { redirect } from '@sveltejs/kit';
 import { Client, Account } from 'node-appwrite';
-import { PUBLIC_APPWRITE_ENDPOINT, PUBLIC_APPWRITE_PROJECT_ID } from '$env/static/public';
+import { env } from '$env/dynamic/public';
 import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ url, cookies }) => {
@@ -13,7 +13,7 @@ export const load: PageServerLoad = async ({ url, cookies }) => {
 
 	try {
 		const client = new Client();
-		client.setEndpoint(PUBLIC_APPWRITE_ENDPOINT).setProject(PUBLIC_APPWRITE_PROJECT_ID);
+		client.setEndpoint(env.PUBLIC_APPWRITE_ENDPOINT).setProject(env.PUBLIC_APPWRITE_PROJECT_ID);
 
 		const account = new Account(client);
 		const session = await account.createSession(userId, secret);
