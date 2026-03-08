@@ -1,5 +1,5 @@
 import { redirect, fail } from '@sveltejs/kit';
-import { env } from '$env/dynamic/private';
+import { findUserByEmail, isAdminTeamMember } from '$lib/server/appwrite';
 import type { PageServerLoad, Actions } from './$types';
 
 export const load: PageServerLoad = async ({ cookies }) => {
@@ -17,8 +17,9 @@ export const actions: Actions = {
 			return fail(400, { error: 'Please enter an email address.' });
 		}
 
-		const adminEmail = env.ADMIN_EMAIL?.trim().toLowerCase();
-		if (!adminEmail || email !== adminEmail) {
+		// Check that user exists AND is a member of the Admins team
+		const user = await findUserByEmail(email);
+		if (!user || !(await isAdminTeamMember(user.$id))) {
 			return fail(403, { error: 'This email is not authorized to access the admin area.' });
 		}
 

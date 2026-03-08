@@ -1,6 +1,44 @@
-import { Client, Databases, Query } from 'node-appwrite';
+import { Client, Databases, Query, Teams, Users } from 'node-appwrite';
 import { env } from '$env/dynamic/private';
 import { env as publicEnv } from '$env/dynamic/public';
+
+// --- Admin Team Auth ---
+
+export function getAdminClient() {
+	const client = new Client();
+	client
+		.setEndpoint(publicEnv.PUBLIC_APPWRITE_ENDPOINT)
+		.setProject(publicEnv.PUBLIC_APPWRITE_PROJECT_ID)
+		.setKey(env.APPWRITE_API_KEY);
+	return client;
+}
+
+export async function isAdminTeamMember(userId: string): Promise<boolean> {
+	const teamId = env.ADMIN_TEAM_ID;
+	if (!teamId) return false;
+
+	try {
+		const teams = new Teams(getAdminClient());
+		const memberships = await teams.listMemberships(teamId, [
+			Query.equal('userId', [userId])
+		]);
+		return memberships.total > 0;
+	} catch {
+		return false;
+	}
+}
+
+export async function findUserByEmail(email: string) {
+	try {
+		const users = new Users(getAdminClient());
+		const result = await users.list([Query.equal('email', [email])]);
+		return result.total > 0 ? result.users[0] : null;
+	} catch {
+		return null;
+	}
+}
+
+// --- Database ---
 
 // Table IDs
 const PROFILE = 'profile';

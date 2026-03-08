@@ -1,7 +1,6 @@
 import { redirect } from '@sveltejs/kit';
-import { Client, Users } from 'node-appwrite';
-import { env as publicEnv } from '$env/dynamic/public';
-import { env } from '$env/dynamic/private';
+import { Users } from 'node-appwrite';
+import { getAdminClient, isAdminTeamMember } from '$lib/server/appwrite';
 import type { LayoutServerLoad } from './$types';
 
 export const load: LayoutServerLoad = async ({ cookies }) => {
@@ -19,16 +18,15 @@ export const load: LayoutServerLoad = async ({ cookies }) => {
 	}
 
 	try {
-		const client = new Client();
-		client
-			.setEndpoint(publicEnv.PUBLIC_APPWRITE_ENDPOINT)
-			.setProject(publicEnv.PUBLIC_APPWRITE_PROJECT_ID)
-			.setKey(env.APPWRITE_API_KEY);
-
-		const users = new Users(client);
+		// Verify session is active AND user is still in the Admins team
+		const users = new Users(getAdminClient());
 		const { sessions } = await users.listSessions(parsed.userId);
 		if (!sessions.some((s: { $id: string }) => s.$id === parsed.sessionId)) {
 			throw new Error('Session not found');
+		}
+
+		if (!(await isAdminTeamMember(parsed.userId))) {
+			throw new Error('Not a team member');
 		}
 	} catch {
 		cookies.delete('session', { path: '/' });

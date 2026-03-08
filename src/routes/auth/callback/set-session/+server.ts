@@ -1,7 +1,6 @@
 import { json } from '@sveltejs/kit';
-import { Client, Users } from 'node-appwrite';
-import { env as publicEnv } from '$env/dynamic/public';
-import { env } from '$env/dynamic/private';
+import { Users } from 'node-appwrite';
+import { getAdminClient, isAdminTeamMember } from '$lib/server/appwrite';
 import type { RequestHandler } from './$types';
 
 export const POST: RequestHandler = async ({ request, cookies, url }) => {
@@ -11,24 +10,13 @@ export const POST: RequestHandler = async ({ request, cookies, url }) => {
 		return json({ error: 'Missing session data' }, { status: 400 });
 	}
 
-	// Verify the session actually exists and belongs to the authorized admin
+	// Verify the user is in the Admins team and the session is real
 	try {
-		const client = new Client();
-		client
-			.setEndpoint(publicEnv.PUBLIC_APPWRITE_ENDPOINT)
-			.setProject(publicEnv.PUBLIC_APPWRITE_PROJECT_ID)
-			.setKey(env.APPWRITE_API_KEY);
-
-		const users = new Users(client);
-
-		// Check user is the authorized admin
-		const user = await users.get(userId);
-		const adminEmail = env.ADMIN_EMAIL?.trim().toLowerCase();
-		if (!adminEmail || user.email.toLowerCase() !== adminEmail) {
+		if (!(await isAdminTeamMember(userId))) {
 			return json({ error: 'Unauthorized' }, { status: 403 });
 		}
 
-		// Check the session exists
+		const users = new Users(getAdminClient());
 		const { sessions } = await users.listSessions(userId);
 		if (!sessions.some((s: { $id: string }) => s.$id === sessionId)) {
 			return json({ error: 'Session not found' }, { status: 401 });
