@@ -45,9 +45,9 @@ Read env vars inside functions, not at module top level — they aren't availabl
 
 | Variable | Scope | Example |
 |----------|-------|---------|
-| `PUBLIC_APPWRITE_ENDPOINT` | Public | `https://nyc.cloud.appwrite.io/v1` |
-| `PUBLIC_APPWRITE_PROJECT_ID` | Public | `69aca87c001009f7865d` |
-| `APPWRITE_API_KEY` | Private | `standard_6daeccce...` |
+| `PUBLIC_APPWRITE_ENDPOINT` | Public | `https://cloud.appwrite.io/v1` |
+| `PUBLIC_APPWRITE_PROJECT_ID` | Public | `your-project-id` |
+| `APPWRITE_API_KEY` | Private | `standard_xxxx...` |
 | `APPWRITE_DATABASE_ID` | Private | `resume_db` |
 | `ADMIN_EMAIL` | Private | `user@example.com` |
 

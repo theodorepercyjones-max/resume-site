@@ -1,42 +1,55 @@
-# sv
+# Resume Site
 
-Everything you need to build a Svelte project, powered by [`sv`](https://github.com/sveltejs/cli).
+A personal resume/portfolio site built with SvelteKit and Appwrite.
 
-## Creating a project
+## Tech Stack
 
-If you're seeing this, you've probably already done this step. Congrats!
+- **Framework**: SvelteKit (Svelte 5, TypeScript)
+- **Backend**: Appwrite Cloud (database, magic link auth)
+- **Styling**: Tailwind CSS v4 + Skeleton UI v4
+- **Markdown**: EasyMDE editor + `marked` for server-side rendering
+- **Hosting**: Appwrite Sites (SSR via `adapter-node`)
+
+## Features
+
+- Public resume page with work experience, freelance work, and education sections
+- Admin dashboard with magic link authentication
+- Markdown editing for rich text fields
+- Server-side rendering
+
+## Setup
+
+1. Clone the repo and install dependencies:
+
+   ```sh
+   npm install
+   ```
+
+2. Copy `.env.example` to `.env` and fill in your Appwrite credentials:
+
+   ```sh
+   cp .env.example .env
+   ```
+
+3. Set up Appwrite:
+   - Create collections: `profile`, `work_experience`, `freelance_work`, `education`, `todos`
+   - Enable Magic URL auth in Auth settings
+   - Add your domain as a Web Platform
+
+4. Run the dev server:
+
+   ```sh
+   npm run dev
+   ```
+
+## Commands
 
 ```sh
-# create a new project
-npx sv create my-app
+npm run dev      # Dev server
+npm run build    # Production build
+npm run preview  # Preview production build
 ```
 
-To recreate this project with the same configuration:
+## License
 
-```sh
-# recreate this project
-npx sv@0.12.5 create --template minimal --types ts --install npm resume-sveltekit
-```
-
-## Developing
-
-Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
-
-```sh
-npm run dev
-
-# or start the server and open the app in a new browser tab
-npm run dev -- --open
-```
-
-## Building
-
-To create a production version of your app:
-
-```sh
-npm run build
-```
-
-You can preview the production build with `npm run preview`.
-
-> To deploy your app, you may need to install an [adapter](https://svelte.dev/docs/kit/adapters) for your target environment.
+AGPL-3.0 -- see [LICENSE](LICENSE).
