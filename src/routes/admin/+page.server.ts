@@ -32,14 +32,18 @@ export const actions: Actions = {
 			freelance_status: form.get('freelance_status') as string || 'not_accepting'
 		};
 
-		const profile = await getProfile();
-		if (profile) {
-			await updateProfile(profile.$id, data);
-		} else {
-			await createProfile(data);
+		try {
+			const profile = await getProfile();
+			if (profile) {
+				await updateProfile(profile.$id, data);
+			} else {
+				await createProfile(data);
+			}
+			return { success: true, message: 'Profile updated.' };
+		} catch (e) {
+			console.error('updateProfile action error:', e);
+			return { success: false, message: `Error saving profile: ${e instanceof Error ? e.message : e}` };
 		}
-
-		return { success: true, message: 'Profile updated.' };
 	},
 
 	saveWorkExperience: async ({ request }) => {
@@ -55,20 +59,29 @@ export const actions: Actions = {
 			sort_order: parseInt(form.get('sort_order') as string || '0')
 		};
 
-		if (docId) {
-			await updateWorkExperience(docId, data);
-		} else {
-			await createWorkExperience(data);
+		try {
+			if (docId) {
+				await updateWorkExperience(docId, data);
+			} else {
+				await createWorkExperience(data);
+			}
+			return { success: true, message: 'Work experience saved.' };
+		} catch (e) {
+			console.error('saveWorkExperience action error:', e);
+			return { success: false, message: `Error saving work experience: ${e instanceof Error ? e.message : e}` };
 		}
-
-		return { success: true, message: 'Work experience saved.' };
 	},
 
 	deleteWorkExperience: async ({ request }) => {
 		const form = await request.formData();
 		const docId = form.get('doc_id') as string;
-		if (docId) await deleteWorkExperience(docId);
-		return { success: true, message: 'Work experience deleted.' };
+		try {
+			if (docId) await deleteWorkExperience(docId);
+			return { success: true, message: 'Work experience deleted.' };
+		} catch (e) {
+			console.error('deleteWorkExperience action error:', e);
+			return { success: false, message: `Error deleting work experience: ${e instanceof Error ? e.message : e}` };
+		}
 	},
 
 	saveFreelanceWork: async ({ request }) => {
@@ -83,20 +96,29 @@ export const actions: Actions = {
 			sort_order: parseInt(form.get('sort_order') as string || '0')
 		};
 
-		if (docId) {
-			await updateFreelanceWork(docId, data);
-		} else {
-			await createFreelanceWork(data);
+		try {
+			if (docId) {
+				await updateFreelanceWork(docId, data);
+			} else {
+				await createFreelanceWork(data);
+			}
+			return { success: true, message: 'Freelance work saved.' };
+		} catch (e) {
+			console.error('saveFreelanceWork action error:', e);
+			return { success: false, message: `Error saving freelance work: ${e instanceof Error ? e.message : e}` };
 		}
-
-		return { success: true, message: 'Freelance work saved.' };
 	},
 
 	deleteFreelanceWork: async ({ request }) => {
 		const form = await request.formData();
 		const docId = form.get('doc_id') as string;
-		if (docId) await deleteFreelanceWork(docId);
-		return { success: true, message: 'Freelance work deleted.' };
+		try {
+			if (docId) await deleteFreelanceWork(docId);
+			return { success: true, message: 'Freelance work deleted.' };
+		} catch (e) {
+			console.error('deleteFreelanceWork action error:', e);
+			return { success: false, message: `Error deleting freelance work: ${e instanceof Error ? e.message : e}` };
+		}
 	},
 
 	saveEducation: async ({ request }) => {
@@ -112,20 +134,29 @@ export const actions: Actions = {
 			sort_order: parseInt(form.get('sort_order') as string || '0')
 		};
 
-		if (docId) {
-			await updateEducation(docId, data);
-		} else {
-			await createEducation(data);
+		try {
+			if (docId) {
+				await updateEducation(docId, data);
+			} else {
+				await createEducation(data);
+			}
+			return { success: true, message: 'Education saved.' };
+		} catch (e) {
+			console.error('saveEducation action error:', e);
+			return { success: false, message: `Error saving education: ${e instanceof Error ? e.message : e}` };
 		}
-
-		return { success: true, message: 'Education saved.' };
 	},
 
 	deleteEducation: async ({ request }) => {
 		const form = await request.formData();
 		const docId = form.get('doc_id') as string;
-		if (docId) await deleteEducation(docId);
-		return { success: true, message: 'Education deleted.' };
+		try {
+			if (docId) await deleteEducation(docId);
+			return { success: true, message: 'Education deleted.' };
+		} catch (e) {
+			console.error('deleteEducation action error:', e);
+			return { success: false, message: `Error deleting education: ${e instanceof Error ? e.message : e}` };
+		}
 	},
 
 	saveTodo: async ({ request }) => {
@@ -137,27 +168,41 @@ export const actions: Actions = {
 			sort_order: parseInt(form.get('sort_order') as string || '0')
 		};
 
-		if (docId) {
-			await updateTodo(docId, data);
-		} else {
-			await createTodo(data);
+		try {
+			if (docId) {
+				await updateTodo(docId, data);
+			} else {
+				await createTodo(data);
+			}
+			return { success: true, message: 'Todo saved.' };
+		} catch (e) {
+			console.error('saveTodo action error:', e);
+			return { success: false, message: `Error saving todo: ${e instanceof Error ? e.message : e}` };
 		}
-
-		return { success: true, message: 'Todo saved.' };
 	},
 
 	toggleTodo: async ({ request }) => {
 		const form = await request.formData();
 		const docId = form.get('doc_id') as string;
 		const completed = form.get('completed') === 'true';
-		if (docId) await updateTodo(docId, { completed: !completed });
-		return { success: true };
+		try {
+			if (docId) await updateTodo(docId, { completed: !completed });
+			return { success: true };
+		} catch (e) {
+			console.error('toggleTodo action error:', e);
+			return { success: false, message: `Error toggling todo: ${e instanceof Error ? e.message : e}` };
+		}
 	},
 
 	deleteTodo: async ({ request }) => {
 		const form = await request.formData();
 		const docId = form.get('doc_id') as string;
-		if (docId) await deleteTodo(docId);
-		return { success: true, message: 'Todo deleted.' };
+		try {
+			if (docId) await deleteTodo(docId);
+			return { success: true, message: 'Todo deleted.' };
+		} catch (e) {
+			console.error('deleteTodo action error:', e);
+			return { success: false, message: `Error deleting todo: ${e instanceof Error ? e.message : e}` };
+		}
 	}
 };
