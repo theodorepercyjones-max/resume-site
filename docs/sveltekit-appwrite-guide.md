@@ -14,7 +14,7 @@ You are building a SvelteKit SSR web app with Appwrite Cloud as the backend, hos
 ```
 src/
   lib/
-    server/appwrite.ts     # Server SDK (node-appwrite, API key) — DB CRUD
+    server/appwrite.ts     # Server SDK (node-appwrite, API key) — DB CRUD + auth helpers
     appwrite.ts            # Client SDK (appwrite) — auth only
     components/            # Reusable Svelte components
   routes/
@@ -22,12 +22,13 @@ src/
     +page.server.ts        # Public data loader
     +page.svelte           # Public page
     admin/
-      +layout.server.ts    # Auth guard (validates session against Appwrite)
+      +layout.server.ts    # Auth guard (session + team membership check)
       +page.server.ts      # Form actions (CRUD)
       +page.svelte         # Admin dashboard
     auth/
       login/               # Email validation + magic link trigger
-      callback/            # Session creation (email re-verified server-side)
+      callback/            # Client-side session creation (team verified server-side)
+        set-session/       # Server endpoint to persist session cookie
       logout/              # Session revocation + cookie cleanup
   app.css                  # @import 'tailwindcss'; @import '@skeletonlabs/skeleton'; @import '@skeletonlabs/skeleton-svelte';
 ```
@@ -49,7 +50,7 @@ Read env vars inside functions, not at module top level — they aren't availabl
 | `PUBLIC_APPWRITE_PROJECT_ID` | Public | `your-project-id` |
 | `APPWRITE_API_KEY` | Private | `standard_xxxx...` |
 | `APPWRITE_DATABASE_ID` | Private | `resume_db` |
-| `ADMIN_EMAIL` | Private | `user@example.com` |
+| `ADMIN_TEAM_ID` | Private | `6xx...` (from Auth → Teams → Admins) |
 
 Appwrite Sites also auto-injects `APPWRITE_SITE_PROJECT_ID` and `APPWRITE_SITE_API_ENDPOINT` (usable as alternatives).
 
@@ -62,20 +63,43 @@ Watch for **trailing spaces** in env var names in the Appwrite Console — they 
 - Use `'unique()'` as the document ID for auto-generation.
 - Permissions: Any=Read, Users=CRUD for a public site with admin editing.
 
-## Authentication (Magic URL)
+## Authentication (Magic URL + Teams)
+
+### Authorization via Appwrite Teams
+
+Access is controlled by membership in an **Admins** team created in the Appwrite Console. Only users added to this team (via Console or server SDK) can access the admin UI. This replaces env-var-based email allowlisting — add/remove admins in the Console without redeploying.
+
+Shared helpers in `src/lib/server/appwrite.ts`:
+```ts
+// Check if a user is in the Admins team
+export async function isAdminTeamMember(userId: string): Promise<boolean> {
+  const teams = new Teams(getAdminClient());
+  const memberships = await teams.listMemberships(env.ADMIN_TEAM_ID, [
+    Query.equal('userId', [userId])
+  ]);
+  return memberships.total > 0;
+}
+
+// Look up user by email
+export async function findUserByEmail(email: string) {
+  const users = new Users(getAdminClient());
+  const result = await users.list([Query.equal('email', [email])]);
+  return result.total > 0 ? result.users[0] : null;
+}
+```
 
 ### CRITICAL: Use Admin SDK for All Server-Side Auth
 
-`node-appwrite`'s `client.setSession()` + `account.get()` **does not work on Appwrite Cloud** — returns `401 User (role: guests) missing scopes`. All server-side session operations must use the admin SDK (`Users` API with API key) instead.
+`node-appwrite`'s `client.setSession()` + `account.get()` **does not work on Appwrite Cloud** — returns `401 User (role: guests) missing scopes`. All server-side session operations must use the admin SDK (`Users`/`Teams` API with API key) instead.
 
 ### Security Model — Defense in Depth
 
 The Appwrite project ID and endpoint are public. Anyone can call `createMagicURLToken()` directly against the API for any email. Therefore:
 
-1. **Login form action** — validate email matches `ADMIN_EMAIL` server-side (UX gate, not security boundary)
-2. **Callback load** — re-verify the user's email via admin SDK (`Users.get()`) BEFORE passing credentials to the client for session creation
-3. **Cookie set endpoint** — re-verify the user is the authorized admin AND the session exists before persisting the cookie. **This is the real security boundary.**
-4. **Auth guard** — validate the session is real and active against Appwrite on every admin request
+1. **Login form action** — verify user exists AND is in the Admins team (UX gate)
+2. **Callback load** — re-verify team membership via admin SDK BEFORE passing credentials to the client for session creation
+3. **Cookie set endpoint** — re-verify team membership AND session exists before persisting the cookie. **This is the real security boundary.**
+4. **Auth guard** — validate session is active AND user is still in the Admins team on every admin request (so removing a user from the team instantly revokes access)
 
 ### Session Cookie Rules
 
@@ -111,28 +135,31 @@ await account.get(); // 401 — "User (role: guests) missing scopes"
 
 Always do this:
 ```ts
-// GOOD: use admin SDK to verify session exists
-const client = new Client();
-client.setEndpoint(...).setProject(...).setKey(API_KEY);
-const users = new Users(client);
+// GOOD: use admin SDK to verify session exists AND team membership
+import { getAdminClient, isAdminTeamMember } from '$lib/server/appwrite';
+
+const users = new Users(getAdminClient());
 const { sessions } = await users.listSessions(parsed.userId);
 if (!sessions.some(s => s.$id === parsed.sessionId)) {
   throw new Error('Session not found');
+}
+if (!(await isAdminTeamMember(parsed.userId))) {
+  throw new Error('Not a team member');
 }
 ```
 
 On failure, delete the cookie and redirect to login.
 
-### Callback — Email Verification + Client-Side Session Creation
+### Callback — Team Verification + Client-Side Session Creation
 
 Session creation MUST happen in the user's browser (client-side SDK) so that Appwrite records the real user IP and user-agent. Creating sessions server-side with `node-appwrite` causes all sessions to show the server's IP in the Appwrite dashboard.
 
-**Server load function (`+page.server.ts`)** — verify email, pass credentials to client:
+**Server load function (`+page.server.ts`)** — verify team membership, pass credentials to client:
 ```ts
-// Verify email via admin SDK BEFORE allowing session creation
-const users = new Users(adminClient); // client with API key
-const user = await users.get(userId);
-if (user.email.toLowerCase() !== ADMIN_EMAIL) {
+import { isAdminTeamMember } from '$lib/server/appwrite';
+
+// Verify user is in the Admins team BEFORE allowing session creation
+if (!(await isAdminTeamMember(userId))) {
   redirect(302, '/auth/login?error=unauthorized');
 }
 // Return credentials to client (secret is already in the URL, single-use)
@@ -153,12 +180,12 @@ await fetch('/auth/callback/set-session', {
 });
 ```
 
-**Server endpoint (`set-session/+server.ts`)** — verify and set cookie:
+**Server endpoint (`set-session/+server.ts`)** — verify team membership, session, and set cookie:
 ```ts
-// Verify session exists and user is authorized admin via admin SDK
-const users = new Users(adminClient);
-const user = await users.get(userId);
-if (user.email.toLowerCase() !== ADMIN_EMAIL) return json({ error: 'Unauthorized' }, { status: 403 });
+import { getAdminClient, isAdminTeamMember } from '$lib/server/appwrite';
+
+if (!(await isAdminTeamMember(userId))) return json({ error: 'Unauthorized' }, { status: 403 });
+const users = new Users(getAdminClient());
 const { sessions } = await users.listSessions(userId);
 if (!sessions.some(s => s.$id === sessionId)) return json({ error: 'Not found' }, { status: 401 });
 // Then set cookie with userId, sessionId, and secret
@@ -184,8 +211,11 @@ Wrap in try/catch — the session may already be expired.
 ### Appwrite Console Setup
 
 1. Auth → Settings → Security: Enable Magic URL
-2. Overview → Integrations → Platforms: Add Web platform with your domain
-3. Auth → Security → Session limit: Configure max concurrent sessions (default: 10)
+2. Auth → Settings → Security → Users Limit: Set to current user count to block public signups
+3. Overview → Integrations → Platforms: Add Web platform with your domain
+4. Auth → Security → Session limit: Configure max concurrent sessions (default: 10)
+5. Auth → Teams: Create "Admins" team, add authorized users as members
+6. Set `ADMIN_TEAM_ID` env var to the Admins team ID
 
 ## Svelte 5 Patterns
 
