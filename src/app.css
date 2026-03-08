@@ -16,3 +16,8 @@
   --color-accent-subtle: #fef3c7;
   --color-cream: #faf8f5;
 }
+
+/* Make bullet points darker so they stand out on white backgrounds */
+.prose :where(ul > li)::marker {
+  color: var(--color-navy);
+}

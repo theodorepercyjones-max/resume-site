@@ -32,7 +32,7 @@ A personal resume/portfolio site built with SvelteKit and Appwrite.
    ```
 
 3. Set up Appwrite:
-   - Create collections: `profile`, `work_experience`, `freelance_work`, `education`, `todos`
+   - Create collections: `profile`, `work_experience`, `freelance_work`, `education`
    - Enable Magic URL auth in Auth settings
    - Add your domain as a Web Platform
 

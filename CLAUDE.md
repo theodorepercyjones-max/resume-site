@@ -47,7 +47,7 @@ src/
 - Attribute name `jobtitle` (not `job_title` -- Appwrite rejected the underscore variant)
 - Magic URL auth and Web Platform are console-only config
 - Table permissions: Any=read, Users=CRUD
-- Collections: profile, work_experience, freelance_work, education, todos
+- Collections: profile, work_experience, freelance_work, education
 
 ## Key Conventions
 - Markdown fields (summary, descriptions, details): EasyMDE editor, stored as markdown, rendered to HTML server-side via `marked`

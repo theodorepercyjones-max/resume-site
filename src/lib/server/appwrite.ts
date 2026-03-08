@@ -7,7 +7,6 @@ const PROFILE = 'profile';
 const WORK_EXPERIENCE = 'work_experience';
 const FREELANCE_WORK = 'freelance_work';
 const EDUCATION = 'education';
-const TODOS = 'todos';
 
 function getClient() {
 	const client = new Client();
@@ -157,33 +156,3 @@ export async function deleteEducation(docId: string) {
 	return db.deleteDocument(dbId(), EDUCATION, docId);
 }
 
-// --- Todos ---
-
-export async function getTodos() {
-	const db = getDb();
-	try {
-		const result = await db.listDocuments(dbId(), TODOS, [
-			Query.orderAsc('sort_order'),
-			Query.limit(100)
-		]);
-		return result.documents;
-	} catch (e) {
-		console.error('getTodos error:', e);
-		return [];
-	}
-}
-
-export async function createTodo(data: Record<string, unknown>) {
-	const db = getDb();
-	return db.createDocument(dbId(), TODOS, 'unique()', data);
-}
-
-export async function updateTodo(docId: string, data: Record<string, unknown>) {
-	const db = getDb();
-	return db.updateDocument(dbId(), TODOS, docId, data);
-}
-
-export async function deleteTodo(docId: string) {
-	const db = getDb();
-	return db.deleteDocument(dbId(), TODOS, docId);
-}

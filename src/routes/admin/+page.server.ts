@@ -2,21 +2,19 @@ import {
 	getProfile, createProfile, updateProfile,
 	getWorkExperiences, createWorkExperience, updateWorkExperience, deleteWorkExperience,
 	getFreelanceWorks, createFreelanceWork, updateFreelanceWork, deleteFreelanceWork,
-	getEducations, createEducation, updateEducation, deleteEducation,
-	getTodos, createTodo, updateTodo, deleteTodo
+	getEducations, createEducation, updateEducation, deleteEducation
 } from '$lib/server/appwrite';
 import type { PageServerLoad, Actions } from './$types';
 
 export const load: PageServerLoad = async () => {
-	const [profile, workExperiences, freelanceWorks, educations, todos] = await Promise.all([
+	const [profile, workExperiences, freelanceWorks, educations] = await Promise.all([
 		getProfile(),
 		getWorkExperiences(),
 		getFreelanceWorks(),
-		getEducations(),
-		getTodos()
+		getEducations()
 	]);
 
-	return { profile, workExperiences, freelanceWorks, educations, todos };
+	return { profile, workExperiences, freelanceWorks, educations };
 };
 
 export const actions: Actions = {
@@ -225,53 +223,6 @@ export const actions: Actions = {
 		} catch (e) {
 			console.error('moveEducation error:', e);
 			return { success: false, message: `Error reordering: ${e instanceof Error ? e.message : e}` };
-		}
-	},
-
-	saveTodo: async ({ request }) => {
-		const form = await request.formData();
-		const docId = form.get('doc_id') as string;
-		const data = {
-			title: form.get('title') as string || '',
-			completed: form.get('completed') === 'true',
-			sort_order: parseInt(form.get('sort_order') as string || '0')
-		};
-
-		try {
-			if (docId) {
-				await updateTodo(docId, data);
-			} else {
-				await createTodo(data);
-			}
-			return { success: true, message: 'Todo saved.' };
-		} catch (e) {
-			console.error('saveTodo action error:', e);
-			return { success: false, message: `Error saving todo: ${e instanceof Error ? e.message : e}` };
-		}
-	},
-
-	toggleTodo: async ({ request }) => {
-		const form = await request.formData();
-		const docId = form.get('doc_id') as string;
-		const completed = form.get('completed') === 'true';
-		try {
-			if (docId) await updateTodo(docId, { completed: !completed });
-			return { success: true };
-		} catch (e) {
-			console.error('toggleTodo action error:', e);
-			return { success: false, message: `Error toggling todo: ${e instanceof Error ? e.message : e}` };
-		}
-	},
-
-	deleteTodo: async ({ request }) => {
-		const form = await request.formData();
-		const docId = form.get('doc_id') as string;
-		try {
-			if (docId) await deleteTodo(docId);
-			return { success: true, message: 'Todo deleted.' };
-		} catch (e) {
-			console.error('deleteTodo action error:', e);
-			return { success: false, message: `Error deleting todo: ${e instanceof Error ? e.message : e}` };
 		}
 	}
 };
