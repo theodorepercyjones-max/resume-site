@@ -84,6 +84,29 @@ export const actions: Actions = {
 		}
 	},
 
+	moveWorkExperience: async ({ request }) => {
+		const form = await request.formData();
+		const docId = form.get('doc_id') as string;
+		const direction = form.get('direction') as string;
+		try {
+			const items = await getWorkExperiences();
+			const idx = items.findIndex(i => i.$id === docId);
+			const swapIdx = direction === 'up' ? idx - 1 : idx + 1;
+			if (idx >= 0 && swapIdx >= 0 && swapIdx < items.length) {
+				const currentOrder = items[idx].sort_order ?? idx;
+				const swapOrder = items[swapIdx].sort_order ?? swapIdx;
+				await Promise.all([
+					updateWorkExperience(docId, { sort_order: swapOrder }),
+					updateWorkExperience(items[swapIdx].$id, { sort_order: currentOrder })
+				]);
+			}
+			return { success: true };
+		} catch (e) {
+			console.error('moveWorkExperience error:', e);
+			return { success: false, message: `Error reordering: ${e instanceof Error ? e.message : e}` };
+		}
+	},
+
 	saveFreelanceWork: async ({ request }) => {
 		const form = await request.formData();
 		const docId = form.get('doc_id') as string;
@@ -118,6 +141,29 @@ export const actions: Actions = {
 		} catch (e) {
 			console.error('deleteFreelanceWork action error:', e);
 			return { success: false, message: `Error deleting freelance work: ${e instanceof Error ? e.message : e}` };
+		}
+	},
+
+	moveFreelanceWork: async ({ request }) => {
+		const form = await request.formData();
+		const docId = form.get('doc_id') as string;
+		const direction = form.get('direction') as string;
+		try {
+			const items = await getFreelanceWorks();
+			const idx = items.findIndex(i => i.$id === docId);
+			const swapIdx = direction === 'up' ? idx - 1 : idx + 1;
+			if (idx >= 0 && swapIdx >= 0 && swapIdx < items.length) {
+				const currentOrder = items[idx].sort_order ?? idx;
+				const swapOrder = items[swapIdx].sort_order ?? swapIdx;
+				await Promise.all([
+					updateFreelanceWork(docId, { sort_order: swapOrder }),
+					updateFreelanceWork(items[swapIdx].$id, { sort_order: currentOrder })
+				]);
+			}
+			return { success: true };
+		} catch (e) {
+			console.error('moveFreelanceWork error:', e);
+			return { success: false, message: `Error reordering: ${e instanceof Error ? e.message : e}` };
 		}
 	},
 
@@ -156,6 +202,29 @@ export const actions: Actions = {
 		} catch (e) {
 			console.error('deleteEducation action error:', e);
 			return { success: false, message: `Error deleting education: ${e instanceof Error ? e.message : e}` };
+		}
+	},
+
+	moveEducation: async ({ request }) => {
+		const form = await request.formData();
+		const docId = form.get('doc_id') as string;
+		const direction = form.get('direction') as string;
+		try {
+			const items = await getEducations();
+			const idx = items.findIndex(i => i.$id === docId);
+			const swapIdx = direction === 'up' ? idx - 1 : idx + 1;
+			if (idx >= 0 && swapIdx >= 0 && swapIdx < items.length) {
+				const currentOrder = items[idx].sort_order ?? idx;
+				const swapOrder = items[swapIdx].sort_order ?? swapIdx;
+				await Promise.all([
+					updateEducation(docId, { sort_order: swapOrder }),
+					updateEducation(items[swapIdx].$id, { sort_order: currentOrder })
+				]);
+			}
+			return { success: true };
+		} catch (e) {
+			console.error('moveEducation error:', e);
+			return { success: false, message: `Error reordering: ${e instanceof Error ? e.message : e}` };
 		}
 	},
 

@@ -5,6 +5,24 @@
 	let { data, form } = $props();
 
 	let openSection = $state<string | null>('profile');
+	let toastMessage = $state('');
+	let toastSuccess = $state(true);
+	let toastVisible = $state(false);
+	let toastTimeout: ReturnType<typeof setTimeout>;
+
+	function showToast(message: string, success: boolean) {
+		toastMessage = message;
+		toastSuccess = success;
+		toastVisible = true;
+		clearTimeout(toastTimeout);
+		toastTimeout = setTimeout(() => { toastVisible = false; }, 3500);
+	}
+
+	$effect(() => {
+		if (form?.message) {
+			showToast(form.message, form.success ?? false);
+		}
+	});
 
 	function toggle(section: string) {
 		openSection = openSection === section ? null : section;
@@ -15,9 +33,15 @@
 	<title>Admin Dashboard</title>
 </svelte:head>
 
-{#if form?.message}
-	<div class="{form.success ? 'bg-emerald-50 border-emerald-200 text-emerald-800' : 'bg-red-50 border-red-200 text-red-800'} border rounded-lg px-4 py-3 mb-4 text-sm">
-		{form.message}
+<!-- Toast notification -->
+{#if toastVisible}
+	<div class="fixed bottom-6 right-6 z-50 max-w-sm px-4 py-3 rounded-lg shadow-lg text-sm font-medium transition-all {toastSuccess ? 'bg-emerald-600 text-white' : 'bg-red-600 text-white'}">
+		<div class="flex items-center gap-2">
+			<span class="flex-1">{toastMessage}</span>
+			<button type="button" class="opacity-70 hover:opacity-100" onclick={() => toastVisible = false}>
+				<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+			</button>
+		</div>
 	</div>
 {/if}
 
@@ -85,10 +109,34 @@
 	</button>
 	{#if openSection === 'work'}
 		<div class="px-6 pb-6 border-t border-slate-100">
-			{#each data.workExperiences as exp}
+			{#each data.workExperiences as exp, i}
 				<div class="border border-slate-100 rounded-lg p-4 mt-4">
+					<div class="flex items-center justify-between mb-3">
+						<span class="text-xs text-slate-400">#{i + 1}</span>
+						<div class="flex gap-1">
+							{#if i > 0}
+								<form method="POST" action="?/moveWorkExperience" use:enhance>
+									<input type="hidden" name="doc_id" value={exp.$id} />
+									<input type="hidden" name="direction" value="up" />
+									<button type="submit" class="w-7 h-7 flex items-center justify-center rounded border border-slate-200 hover:bg-slate-100 text-slate-500 hover:text-slate-700" title="Move up">
+										<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 15l-6-6-6 6"/></svg>
+									</button>
+								</form>
+							{/if}
+							{#if i < data.workExperiences.length - 1}
+								<form method="POST" action="?/moveWorkExperience" use:enhance>
+									<input type="hidden" name="doc_id" value={exp.$id} />
+									<input type="hidden" name="direction" value="down" />
+									<button type="submit" class="w-7 h-7 flex items-center justify-center rounded border border-slate-200 hover:bg-slate-100 text-slate-500 hover:text-slate-700" title="Move down">
+										<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg>
+									</button>
+								</form>
+							{/if}
+						</div>
+					</div>
 					<form method="POST" action="?/saveWorkExperience" use:enhance class="space-y-3">
 						<input type="hidden" name="doc_id" value={exp.$id} />
+						<input type="hidden" name="sort_order" value={exp.sort_order ?? i} />
 						<div class="grid grid-cols-1 md:grid-cols-2 gap-3">
 							<div>
 								<label for="we-jobtitle-{exp.$id}" class="block text-xs font-semibold text-slate-600 mb-1">Job Title</label>
@@ -117,10 +165,6 @@
 							<span class="block text-xs font-semibold text-slate-600 mb-1">Description</span>
 							<MarkdownEditor name="description" content={exp.description || ''} />
 						</div>
-						<div>
-							<label for="we-sort-{exp.$id}" class="block text-xs font-semibold text-slate-600 mb-1">Sort Order</label>
-							<input type="number" id="we-sort-{exp.$id}" name="sort_order" value={exp.sort_order || 0} class="w-20 border border-slate-200 rounded-md px-3 py-2 text-sm focus:border-[var(--color-accent)] focus:outline-none focus:ring-2 focus:ring-amber-100" />
-						</div>
 						<div class="flex gap-2">
 							<button type="submit" class="bg-[var(--color-accent)] hover:bg-amber-700 text-white font-semibold px-4 py-1.5 rounded-md text-sm transition-colors">Save</button>
 						</div>
@@ -136,6 +180,7 @@
 			<details class="mt-4">
 				<summary class="cursor-pointer text-sm text-[var(--color-accent)] hover:text-amber-700 font-semibold">+ Add Work Experience</summary>
 				<form method="POST" action="?/saveWorkExperience" use:enhance class="space-y-3 mt-3 border border-slate-100 rounded-lg p-4">
+					<input type="hidden" name="sort_order" value={data.workExperiences.length} />
 					<div class="grid grid-cols-1 md:grid-cols-2 gap-3">
 						<div>
 							<label for="new-we-jobtitle" class="block text-xs font-semibold text-slate-600 mb-1">Job Title</label>
@@ -164,10 +209,6 @@
 						<span class="block text-xs font-semibold text-slate-600 mb-1">Description</span>
 						<MarkdownEditor name="description" content="" />
 					</div>
-					<div>
-						<label for="new-we-sort" class="block text-xs font-semibold text-slate-600 mb-1">Sort Order</label>
-						<input type="number" id="new-we-sort" name="sort_order" value="0" class="w-20 border border-slate-200 rounded-md px-3 py-2 text-sm focus:border-[var(--color-accent)] focus:outline-none focus:ring-2 focus:ring-amber-100" />
-					</div>
 					<button type="submit" class="bg-[var(--color-accent)] hover:bg-amber-700 text-white font-semibold px-4 py-1.5 rounded-md text-sm transition-colors">Add</button>
 				</form>
 			</details>
@@ -187,10 +228,34 @@
 	</button>
 	{#if openSection === 'freelance'}
 		<div class="px-6 pb-6 border-t border-slate-100">
-			{#each data.freelanceWorks as work}
+			{#each data.freelanceWorks as work, i}
 				<div class="border border-slate-100 rounded-lg p-4 mt-4">
+					<div class="flex items-center justify-between mb-3">
+						<span class="text-xs text-slate-400">#{i + 1}</span>
+						<div class="flex gap-1">
+							{#if i > 0}
+								<form method="POST" action="?/moveFreelanceWork" use:enhance>
+									<input type="hidden" name="doc_id" value={work.$id} />
+									<input type="hidden" name="direction" value="up" />
+									<button type="submit" class="w-7 h-7 flex items-center justify-center rounded border border-slate-200 hover:bg-slate-100 text-slate-500 hover:text-slate-700" title="Move up">
+										<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 15l-6-6-6 6"/></svg>
+									</button>
+								</form>
+							{/if}
+							{#if i < data.freelanceWorks.length - 1}
+								<form method="POST" action="?/moveFreelanceWork" use:enhance>
+									<input type="hidden" name="doc_id" value={work.$id} />
+									<input type="hidden" name="direction" value="down" />
+									<button type="submit" class="w-7 h-7 flex items-center justify-center rounded border border-slate-200 hover:bg-slate-100 text-slate-500 hover:text-slate-700" title="Move down">
+										<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg>
+									</button>
+								</form>
+							{/if}
+						</div>
+					</div>
 					<form method="POST" action="?/saveFreelanceWork" use:enhance class="space-y-3">
 						<input type="hidden" name="doc_id" value={work.$id} />
+						<input type="hidden" name="sort_order" value={work.sort_order ?? i} />
 						<div class="grid grid-cols-1 md:grid-cols-2 gap-3">
 							<div>
 								<label for="fw-project-{work.$id}" class="block text-xs font-semibold text-slate-600 mb-1">Project Name</label>
@@ -209,15 +274,9 @@
 							<label for="fw-testimonial-{work.$id}" class="block text-xs font-semibold text-slate-600 mb-1">Testimonial</label>
 							<textarea id="fw-testimonial-{work.$id}" name="testimonial" rows="2" class="w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:border-[var(--color-accent)] focus:outline-none focus:ring-2 focus:ring-amber-100">{work.testimonial || ''}</textarea>
 						</div>
-						<div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-							<div>
-								<label for="fw-url-{work.$id}" class="block text-xs font-semibold text-slate-600 mb-1">Portfolio URL</label>
-								<input type="url" id="fw-url-{work.$id}" name="portfolio_url" value={work.portfolio_url || ''} class="w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:border-[var(--color-accent)] focus:outline-none focus:ring-2 focus:ring-amber-100" />
-							</div>
-							<div>
-								<label for="fw-sort-{work.$id}" class="block text-xs font-semibold text-slate-600 mb-1">Sort Order</label>
-								<input type="number" id="fw-sort-{work.$id}" name="sort_order" value={work.sort_order || 0} class="w-20 border border-slate-200 rounded-md px-3 py-2 text-sm focus:border-[var(--color-accent)] focus:outline-none focus:ring-2 focus:ring-amber-100" />
-							</div>
+						<div>
+							<label for="fw-url-{work.$id}" class="block text-xs font-semibold text-slate-600 mb-1">Portfolio URL</label>
+							<input type="url" id="fw-url-{work.$id}" name="portfolio_url" value={work.portfolio_url || ''} class="w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:border-[var(--color-accent)] focus:outline-none focus:ring-2 focus:ring-amber-100" />
 						</div>
 						<div class="flex gap-2">
 							<button type="submit" class="bg-[var(--color-accent)] hover:bg-amber-700 text-white font-semibold px-4 py-1.5 rounded-md text-sm transition-colors">Save</button>
@@ -233,6 +292,7 @@
 			<details class="mt-4">
 				<summary class="cursor-pointer text-sm text-[var(--color-accent)] hover:text-amber-700 font-semibold">+ Add Freelance Work</summary>
 				<form method="POST" action="?/saveFreelanceWork" use:enhance class="space-y-3 mt-3 border border-slate-100 rounded-lg p-4">
+					<input type="hidden" name="sort_order" value={data.freelanceWorks.length} />
 					<div class="grid grid-cols-1 md:grid-cols-2 gap-3">
 						<div>
 							<label for="new-fw-project" class="block text-xs font-semibold text-slate-600 mb-1">Project Name</label>
@@ -251,15 +311,9 @@
 						<label for="new-fw-testimonial" class="block text-xs font-semibold text-slate-600 mb-1">Testimonial</label>
 						<textarea id="new-fw-testimonial" name="testimonial" rows="2" class="w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:border-[var(--color-accent)] focus:outline-none focus:ring-2 focus:ring-amber-100"></textarea>
 					</div>
-					<div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-						<div>
-							<label for="new-fw-url" class="block text-xs font-semibold text-slate-600 mb-1">Portfolio URL</label>
-							<input type="url" id="new-fw-url" name="portfolio_url" class="w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:border-[var(--color-accent)] focus:outline-none focus:ring-2 focus:ring-amber-100" />
-						</div>
-						<div>
-							<label for="new-fw-sort" class="block text-xs font-semibold text-slate-600 mb-1">Sort Order</label>
-							<input type="number" id="new-fw-sort" name="sort_order" value="0" class="w-20 border border-slate-200 rounded-md px-3 py-2 text-sm focus:border-[var(--color-accent)] focus:outline-none focus:ring-2 focus:ring-amber-100" />
-						</div>
+					<div>
+						<label for="new-fw-url" class="block text-xs font-semibold text-slate-600 mb-1">Portfolio URL</label>
+						<input type="url" id="new-fw-url" name="portfolio_url" class="w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:border-[var(--color-accent)] focus:outline-none focus:ring-2 focus:ring-amber-100" />
 					</div>
 					<button type="submit" class="bg-[var(--color-accent)] hover:bg-amber-700 text-white font-semibold px-4 py-1.5 rounded-md text-sm transition-colors">Add</button>
 				</form>
@@ -280,10 +334,34 @@
 	</button>
 	{#if openSection === 'education'}
 		<div class="px-6 pb-6 border-t border-slate-100">
-			{#each data.educations as edu}
+			{#each data.educations as edu, i}
 				<div class="border border-slate-100 rounded-lg p-4 mt-4">
+					<div class="flex items-center justify-between mb-3">
+						<span class="text-xs text-slate-400">#{i + 1}</span>
+						<div class="flex gap-1">
+							{#if i > 0}
+								<form method="POST" action="?/moveEducation" use:enhance>
+									<input type="hidden" name="doc_id" value={edu.$id} />
+									<input type="hidden" name="direction" value="up" />
+									<button type="submit" class="w-7 h-7 flex items-center justify-center rounded border border-slate-200 hover:bg-slate-100 text-slate-500 hover:text-slate-700" title="Move up">
+										<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 15l-6-6-6 6"/></svg>
+									</button>
+								</form>
+							{/if}
+							{#if i < data.educations.length - 1}
+								<form method="POST" action="?/moveEducation" use:enhance>
+									<input type="hidden" name="doc_id" value={edu.$id} />
+									<input type="hidden" name="direction" value="down" />
+									<button type="submit" class="w-7 h-7 flex items-center justify-center rounded border border-slate-200 hover:bg-slate-100 text-slate-500 hover:text-slate-700" title="Move down">
+										<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg>
+									</button>
+								</form>
+							{/if}
+						</div>
+					</div>
 					<form method="POST" action="?/saveEducation" use:enhance class="space-y-3">
 						<input type="hidden" name="doc_id" value={edu.$id} />
+						<input type="hidden" name="sort_order" value={edu.sort_order ?? i} />
 						<div class="grid grid-cols-1 md:grid-cols-2 gap-3">
 							<div>
 								<label for="edu-degree-{edu.$id}" class="block text-xs font-semibold text-slate-600 mb-1">Degree</label>
@@ -312,10 +390,6 @@
 							<span class="block text-xs font-semibold text-slate-600 mb-1">Details</span>
 							<MarkdownEditor name="details" content={edu.details || ''} />
 						</div>
-						<div>
-							<label for="edu-sort-{edu.$id}" class="block text-xs font-semibold text-slate-600 mb-1">Sort Order</label>
-							<input type="number" id="edu-sort-{edu.$id}" name="sort_order" value={edu.sort_order || 0} class="w-20 border border-slate-200 rounded-md px-3 py-2 text-sm focus:border-[var(--color-accent)] focus:outline-none focus:ring-2 focus:ring-amber-100" />
-						</div>
 						<div class="flex gap-2">
 							<button type="submit" class="bg-[var(--color-accent)] hover:bg-amber-700 text-white font-semibold px-4 py-1.5 rounded-md text-sm transition-colors">Save</button>
 						</div>
@@ -330,6 +404,7 @@
 			<details class="mt-4">
 				<summary class="cursor-pointer text-sm text-[var(--color-accent)] hover:text-amber-700 font-semibold">+ Add Education</summary>
 				<form method="POST" action="?/saveEducation" use:enhance class="space-y-3 mt-3 border border-slate-100 rounded-lg p-4">
+					<input type="hidden" name="sort_order" value={data.educations.length} />
 					<div class="grid grid-cols-1 md:grid-cols-2 gap-3">
 						<div>
 							<label for="new-edu-degree" class="block text-xs font-semibold text-slate-600 mb-1">Degree</label>
@@ -357,10 +432,6 @@
 					<div>
 						<span class="block text-xs font-semibold text-slate-600 mb-1">Details</span>
 						<MarkdownEditor name="details" content="" />
-					</div>
-					<div>
-						<label for="new-edu-sort" class="block text-xs font-semibold text-slate-600 mb-1">Sort Order</label>
-						<input type="number" id="new-edu-sort" name="sort_order" value="0" class="w-20 border border-slate-200 rounded-md px-3 py-2 text-sm focus:border-[var(--color-accent)] focus:outline-none focus:ring-2 focus:ring-amber-100" />
 					</div>
 					<button type="submit" class="bg-[var(--color-accent)] hover:bg-amber-700 text-white font-semibold px-4 py-1.5 rounded-md text-sm transition-colors">Add</button>
 				</form>
