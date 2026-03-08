@@ -21,15 +21,6 @@
 				<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 1118 0z"/><circle cx="12" cy="10" r="3"/></svg>
 				{location}
 			</span>
-			{#if data.profile?.nationality}
-				<span class="flex items-center gap-1.5">
-					<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>
-					{data.profile.nationality}
-				</span>
-			{/if}
-			{#if data.profile?.seeking_role}
-				<span class="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-800">{data.profile.seeking_role}</span>
-			{/if}
 		</div>
 	</div>
 </header>
@@ -42,9 +33,24 @@
 				<span class="w-1 h-6 bg-[var(--color-accent)] rounded-sm"></span>
 				<h2 class="font-[var(--font-serif)] text-2xl text-[var(--color-navy)] m-0">Professional Summary</h2>
 			</div>
-			<div class="bg-white rounded-lg p-6 shadow-sm text-slate-600 leading-relaxed prose max-w-none">
+			<div class="bg-white rounded-lg p-6 shadow-sm text-slate-700 leading-7 prose max-w-none">
 				{@html data.profile.summary}
 			</div>
+			{#if data.profile?.nationality || data.profile?.seeking_role}
+				<div class="flex flex-wrap gap-3 mt-4">
+					{#if data.profile?.nationality}
+						<span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-600">
+							<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>
+							{data.profile.nationality}
+						</span>
+					{/if}
+					{#if data.profile?.seeking_role}
+						<span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-800">
+							{data.profile.seeking_role}
+						</span>
+					{/if}
+				</div>
+			{/if}
 		</section>
 	{/if}
 
@@ -77,7 +83,7 @@
 						</div>
 					</div>
 					{#if work.description}
-						<div class="mt-3 text-slate-600 text-sm prose max-w-none">{@html work.description}</div>
+						<div class="mt-3 text-slate-700 text-sm prose max-w-none prose-li:my-0.5 prose-ul:my-1 prose-p:my-1">{@html work.description}</div>
 					{/if}
 					{#if work.testimonial}
 						<div class="border-l-3 border-[var(--color-accent)] pl-4 mt-3 italic text-slate-600">{work.testimonial}</div>
@@ -114,7 +120,7 @@
 						</div>
 					</div>
 					{#if exp.description}
-						<div class="mt-3 text-slate-600 text-sm prose max-w-none">{@html exp.description}</div>
+						<div class="mt-3 text-slate-700 text-sm prose max-w-none prose-li:my-0.5 prose-ul:my-1 prose-p:my-1">{@html exp.description}</div>
 					{/if}
 				</div>
 			{/each}
@@ -143,7 +149,7 @@
 						</div>
 					</div>
 					{#if edu.details}
-						<div class="mt-3 text-slate-400 text-sm prose max-w-none">{@html edu.details}</div>
+						<div class="mt-3 text-slate-700 text-sm prose max-w-none">{@html edu.details}</div>
 					{/if}
 				</div>
 			{/each}
