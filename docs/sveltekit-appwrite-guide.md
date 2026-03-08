@@ -1,121 +1,47 @@
-# SvelteKit + Appwrite Sites + Skeleton UI — Development & Deployment Guide
+# SvelteKit + Appwrite Sites Agent Prompt
 
-A reusable reference for building and deploying SvelteKit apps with Appwrite as the backend-as-a-service, hosted on Appwrite Sites.
-
----
+You are building a SvelteKit SSR web app with Appwrite Cloud as the backend, hosted on Appwrite Sites. Follow these rules exactly.
 
 ## Tech Stack
 
-| Layer | Technology | Purpose |
-|-------|-----------|---------|
-| Framework | SvelteKit (Svelte 5) | Full-stack JS framework (SSR + client) |
-| Backend | Appwrite Cloud | Database, auth, storage (BaaS) |
-| Hosting | Appwrite Sites | SSR hosting via adapter-node |
-| Styling | Tailwind CSS v4 + Skeleton UI v4 | Utility CSS + component library |
-| Rich Text | Tiptap | Extensible rich text editor |
-| VCS | Git + GitHub | Source control + CI/CD trigger |
+- SvelteKit (Svelte 5, TypeScript), `adapter-node`
+- Appwrite Cloud (`node-appwrite` server-side, `appwrite` client-side)
+- Tailwind CSS v4 + Skeleton UI v4
+- Git + GitHub, deployed via Appwrite Sites (auto-deploy on push)
 
----
+## Project Structure
 
-## Project Setup
-
-### Scaffold SvelteKit
-
-```bash
-npx sv create my-app --no-add-ons
-cd my-app
-npm install
+```
+src/
+  lib/
+    server/appwrite.ts     # Server SDK (node-appwrite, API key) — DB CRUD
+    appwrite.ts            # Client SDK (appwrite) — auth only
+    components/            # Reusable Svelte components
+  routes/
+    +layout.svelte         # Root layout (imports app.css)
+    +page.server.ts        # Public data loader
+    +page.svelte           # Public page
+    admin/
+      +layout.server.ts    # Auth guard (validates session against Appwrite)
+      +page.server.ts      # Form actions (CRUD)
+      +page.svelte         # Admin dashboard
+    auth/
+      login/               # Email validation + magic link trigger
+      callback/            # Session creation (email re-verified server-side)
+      logout/              # Session revocation + cookie cleanup
+  app.css                  # @import 'tailwindcss'; @import '@skeletonlabs/skeleton'; @import '@skeletonlabs/skeleton-svelte';
 ```
 
-### Install Dependencies
+## Environment Variables — CRITICAL
 
-```bash
-# Appwrite SDKs
-npm install node-appwrite appwrite
-
-# Styling
-npm install @skeletonlabs/skeleton @skeletonlabs/skeleton-svelte
-npm install -D tailwindcss @tailwindcss/vite @tailwindcss/typography
-
-# Rich text (optional)
-npm install @tiptap/core @tiptap/starter-kit @tiptap/extension-link @tiptap/pm
-```
-
-### Switch to adapter-node
-
-Appwrite Sites requires `adapter-node` for SSR apps:
-
-```bash
-npm install -D @sveltejs/adapter-node
-```
-
-```js
-// svelte.config.js
-import adapter from '@sveltejs/adapter-node';
-
-const config = {
-  kit: {
-    adapter: adapter()
-  }
-};
-export default config;
-```
-
-### Configure Vite
+Appwrite Sites injects env vars at **runtime only**. You MUST use `$env/dynamic/*`, never `$env/static/*`.
 
 ```ts
-// vite.config.ts
-import { sveltekit } from '@sveltejs/kit/vite';
-import tailwindcss from '@tailwindcss/vite';
-import { defineConfig } from 'vite';
-
-export default defineConfig({
-  plugins: [tailwindcss(), sveltekit()]
-});
+// Server: import { env } from '$env/dynamic/private';
+// Client: import { env } from '$env/dynamic/public';
 ```
 
-### CSS Setup
-
-```css
-/* src/app.css */
-@import 'tailwindcss';
-@import '@skeletonlabs/skeleton';
-@import '@skeletonlabs/skeleton-svelte';
-
-@custom-variant dark (&:is(.dark *));
-```
-
-**Important:** Do NOT import Skeleton theme CSS files (e.g., `@skeletonlabs/skeleton/themes/cerberus.css`). The base `@skeletonlabs/skeleton` import is sufficient. Theme CSS imports fail during Tailwind's CSS processing in v4.
-
----
-
-## Environment Variables
-
-### CRITICAL: Use `$env/dynamic/*` on Appwrite Sites
-
-Appwrite Sites injects environment variables at **runtime only** (into `process.env`), NOT at build time. This means:
-
-- **`$env/static/private`** and **`$env/static/public`** → **WILL NOT WORK** (these read env vars at Vite build time)
-- **`$env/dynamic/private`** and **`$env/dynamic/public`** → **USE THESE** (these read from `process.env` at runtime)
-
-```typescript
-// Server-side: src/lib/server/appwrite.ts
-import { env } from '$env/dynamic/private';       // APPWRITE_API_KEY, APPWRITE_DATABASE_ID
-import { env as publicEnv } from '$env/dynamic/public';  // PUBLIC_APPWRITE_ENDPOINT, PUBLIC_APPWRITE_PROJECT_ID
-```
-
-```typescript
-// Client-side: src/lib/appwrite.ts
-import { env } from '$env/dynamic/public';  // PUBLIC_* vars only
-```
-
-### Variable Naming Convention
-
-SvelteKit enforces a naming convention:
-- `PUBLIC_` prefix → accessible on both server and client (`$env/dynamic/public`)
-- No prefix → server-only (`$env/dynamic/private`)
-
-### Required Variables
+Read env vars inside functions, not at module top level — they aren't available during module init on Appwrite Sites.
 
 | Variable | Scope | Example |
 |----------|-------|---------|
@@ -125,504 +51,117 @@ SvelteKit enforces a naming convention:
 | `APPWRITE_DATABASE_ID` | Private | `resume_db` |
 | `ADMIN_EMAIL` | Private | `user@example.com` |
 
-### Local Development
+Appwrite Sites also auto-injects `APPWRITE_SITE_PROJECT_ID` and `APPWRITE_SITE_API_ENDPOINT` (usable as alternatives).
 
-Create a `.env` file (gitignored) in the project root. SvelteKit/Vite loads it automatically.
+Watch for **trailing spaces** in env var names in the Appwrite Console — they silently break lookups.
 
-### Appwrite Sites
+## Appwrite Database Rules
 
-Set env vars in: **Appwrite Console → Sites → Your Site → Settings → Environment Variables**
+- **Indexes are required** for any `Query.orderAsc/orderDesc/equal` — without them, queries throw.
+- Attribute names with underscores may be rejected (e.g. `job_title` → use `jobtitle`).
+- Use `'unique()'` as the document ID for auto-generation.
+- Permissions: Any=Read, Users=CRUD for a public site with admin editing.
 
-**Watch for trailing spaces in variable names!** The Appwrite Console input doesn't trim whitespace. A variable named `PUBLIC_APPWRITE_PROJECT_ID ` (with trailing space) is different from `PUBLIC_APPWRITE_PROJECT_ID` and will silently fail.
+## Authentication (Magic URL)
 
----
+### Security Model — Defense in Depth
 
-## Appwrite SDK Usage
+The Appwrite project ID and endpoint are public. Anyone can call `createMagicURLToken()` directly against the API for any email. Therefore:
 
-### Two SDKs
+1. **Login form action** — validate email matches `ADMIN_EMAIL` server-side (UX gate, not security boundary)
+2. **Callback** — re-verify the user's email via admin SDK (`Users.get()`) BEFORE creating a session cookie. **This is the real security boundary.**
+3. **Auth guard** — validate the session is real and active against Appwrite on every admin request
 
-Appwrite provides two separate npm packages:
+### Session Cookie Rules
 
-| Package | Where | Purpose |
-|---------|-------|---------|
-| `node-appwrite` | Server-side only | Database CRUD, uses API key for auth |
-| `appwrite` | Client-side only | User auth (magic link, OAuth, etc.) |
-
-### Server-Side Client (node-appwrite)
-
-```typescript
-// src/lib/server/appwrite.ts
-import { Client, Databases, Query } from 'node-appwrite';
-import { env } from '$env/dynamic/private';
-import { env as publicEnv } from '$env/dynamic/public';
-
-function getClient() {
-  const client = new Client();
-  client
-    .setEndpoint(publicEnv.PUBLIC_APPWRITE_ENDPOINT)
-    .setProject(publicEnv.PUBLIC_APPWRITE_PROJECT_ID)
-    .setKey(env.APPWRITE_API_KEY);
-  return client;
-}
-
-function getDb() {
-  return new Databases(getClient());
-}
-
-// Example: list documents with ordering
-export async function getItems() {
-  const db = getDb();
-  try {
-    const result = await db.listDocuments(env.APPWRITE_DATABASE_ID, 'collection_id', [
-      Query.orderAsc('sort_order'),
-      Query.limit(100)
-    ]);
-    return result.documents;
-  } catch (e) {
-    console.error('getItems error:', e);
-    return [];
-  }
-}
+```ts
+cookies.set('session', JSON.stringify({ userId, sessionId, secret }), {
+  path: '/',
+  httpOnly: true,
+  sameSite: 'lax',
+  secure: !(url.hostname === 'localhost' || url.hostname === '127.0.0.1'),
+  maxAge: 60 * 60 * 24 * 7
+});
 ```
 
-**Important:** The database ID must be read at call time (inside functions), not at module level, because `$env/dynamic/*` values aren't available during module initialization on Appwrite Sites.
+- **`httpOnly: true`** — always, prevents JS access
+- **`secure`** — `true` in production, `false` only on localhost for dev
+- **`sameSite: 'lax'`** — CSRF protection while allowing magic link redirects
 
-### Client-Side Client (appwrite)
+### Auth Guard — Validate, Don't Just Check Existence
 
-```typescript
-// src/lib/appwrite.ts
-import { Client, Account } from 'appwrite';
-import { env } from '$env/dynamic/public';
-
-let client: Client;
-
-export function getClient() {
-  if (!client) {
-    client = new Client();
-    client.setEndpoint(env.PUBLIC_APPWRITE_ENDPOINT).setProject(env.PUBLIC_APPWRITE_PROJECT_ID);
-  }
-  return client;
-}
-
-export function getAccount() {
-  return new Account(getClient());
-}
+Never do this:
+```ts
+// BAD: any non-empty cookie value passes
+if (!cookies.get('session')) redirect(302, '/auth/login');
 ```
 
----
-
-## Appwrite Database Gotchas
-
-### Attribute Names
-
-Appwrite has restrictions on attribute names. It may reject names with underscores in certain positions. If creation fails, try a concatenated name:
-- `job_title` → might be rejected → use `jobtitle` instead
-
-### Indexes Are Required for Queries
-
-**Any `Query.orderAsc()`, `Query.orderDesc()`, `Query.equal()`, etc. requires a corresponding index on the collection.** Without an index, the query fails silently (throws an exception caught by try/catch).
-
-Create indexes via the Appwrite Console or API:
-
-```bash
-curl -X POST "https://nyc.cloud.appwrite.io/v1/databases/{DB_ID}/collections/{COLLECTION_ID}/indexes" \
-  -H "X-Appwrite-Project: {PROJECT_ID}" \
-  -H "X-Appwrite-Key: {API_KEY}" \
-  -H "Content-Type: application/json" \
-  -d '{"key": "sort_order_asc", "type": "key", "attributes": ["sort_order"], "orders": ["ASC"]}'
+Always do this:
+```ts
+// GOOD: verify session is real and active
+const parsed = JSON.parse(cookies.get('session'));
+const client = new Client();
+client.setEndpoint(...).setProject(...).setSession(parsed.secret);
+const account = new Account(client);
+await account.get(); // throws if session is invalid/expired
 ```
 
-### Collection Permissions
+On failure, delete the cookie and redirect to login.
 
-For a public-facing site with admin-only editing:
-- **Any** role: Read
-- **Users** role: Create, Read, Update, Delete
+### Logout — Revoke the Session
 
-Set these in: **Appwrite Console → Database → Collection → Settings → Permissions**
-
-### Document IDs
-
-Use `'unique()'` as the document ID when creating to let Appwrite auto-generate IDs:
-
-```typescript
-db.createDocument(DB_ID, COLLECTION_ID, 'unique()', data);
+Always invalidate the session on Appwrite before deleting the cookie:
+```ts
+await account.deleteSession(parsed.sessionId);
+cookies.delete('session', { path: '/' });
 ```
 
----
-
-## Authentication (Magic Link)
-
-### Flow
-
-1. User enters email on login page
-2. **Server-side form action validates email** against `ADMIN_EMAIL` env var
-3. If authorized, client-side SDK calls `account.createMagicURLToken()`
-4. User clicks link in email → redirected to `/auth/callback?userId=...&secret=...`
-5. **Server-side callback verifies email again** using admin SDK (`Users.get()`) before setting cookie
-6. Admin routes check for cookie in layout server load
-
-### CRITICAL: Server-Side Email Validation (Defense in Depth)
-
-Appwrite's Magic URL authentication does **not** restrict which email addresses can request login tokens. The `createMagicURLToken()` method sends a magic link to **any valid email address** — this is by design, as Appwrite treats it as a signup/login mechanism for any user.
-
-This means validating the email **only on the login form is not sufficient**. An attacker can bypass the login form entirely:
-
-1. The Appwrite project ID and endpoint are public (embedded in client-side JS)
-2. Anyone can call `createMagicURLToken()` directly via the Appwrite API or browser console
-3. They receive a valid magic link and click it
-4. The callback creates a session — if it doesn't check the email, the attacker gets admin access
-
-**You must validate the email at the callback level** using the server-side admin SDK:
-
-```typescript
-// src/routes/auth/callback/+page.server.ts
-import { Client, Account, Users } from 'node-appwrite';
-import { env } from '$env/dynamic/private';
-import { env as publicEnv } from '$env/dynamic/public';
-
-export const load = async ({ url, cookies }) => {
-  const userId = url.searchParams.get('userId');
-  const secret = url.searchParams.get('secret');
-
-  if (!userId || !secret) redirect(302, '/auth/login?error=invalid');
-
-  // SECURITY: Verify email is authorized BEFORE creating session cookie.
-  // Uses admin API key to look up the user — this cannot be bypassed.
-  const adminClient = new Client();
-  adminClient
-    .setEndpoint(publicEnv.PUBLIC_APPWRITE_ENDPOINT)
-    .setProject(publicEnv.PUBLIC_APPWRITE_PROJECT_ID)
-    .setKey(env.APPWRITE_API_KEY);
-
-  const users = new Users(adminClient);
-  const user = await users.get(userId);
-  const adminEmail = env.ADMIN_EMAIL?.trim().toLowerCase();
-
-  if (!adminEmail || user.email.toLowerCase() !== adminEmail) {
-    redirect(302, '/auth/login?error=unauthorized');
-  }
-
-  // Only AFTER email is verified: create session and set cookie
-  const client = new Client();
-  client.setEndpoint(publicEnv.PUBLIC_APPWRITE_ENDPOINT).setProject(publicEnv.PUBLIC_APPWRITE_PROJECT_ID);
-
-  const account = new Account(client);
-  const session = await account.createSession(userId, secret);
-
-  cookies.set('session', JSON.stringify({
-    userId,
-    sessionId: session.$id,
-    secret: session.secret
-  }), {
-    path: '/',
-    httpOnly: true,
-    sameSite: 'lax',
-    secure: false,
-    maxAge: 60 * 60 * 24 * 7
-  });
-
-  redirect(302, '/admin');
-};
-```
-
-### Why Both Checks Matter
-
-| Layer | What it does | What it prevents |
-|-------|-------------|-----------------|
-| Login form action | Validates email against `ADMIN_EMAIL` before sending magic link | Unauthorized users from receiving magic link emails via the UI |
-| Callback email check | Validates email via admin SDK (`Users.get()`) before setting session cookie | Bypass via direct Appwrite API calls (browser console, curl, etc.) |
-| Admin layout guard | Checks session cookie exists | Unauthenticated access to admin routes |
-
-The callback check is the **true security boundary**. The login form check is a UX improvement (shows a clear error message) and reduces unnecessary magic link emails, but it alone is not sufficient.
-
-### Login Page (Server Validation + Client Token)
-
-```typescript
-// src/routes/auth/login/+page.server.ts
-import { fail } from '@sveltejs/kit';
-import { env } from '$env/dynamic/private';
-
-export const actions = {
-  default: async ({ request }) => {
-    const data = await request.formData();
-    const email = data.get('email')?.toString().trim().toLowerCase();
-
-    if (!email) return fail(400, { error: 'Please enter an email address.' });
-
-    const adminEmail = env.ADMIN_EMAIL?.trim().toLowerCase();
-    if (!adminEmail || email !== adminEmail) {
-      return fail(403, { error: 'This email is not authorized to access the admin area.' });
-    }
-
-    return { validated: true };
-  }
-};
-```
-
-The client then calls `createMagicURLToken()` only after server validation succeeds, using SvelteKit's `use:enhance`.
-
-### Auth Guard
-
-```typescript
-// src/routes/admin/+layout.server.ts
-import { redirect } from '@sveltejs/kit';
-
-export const load = async ({ cookies }) => {
-  const session = cookies.get('session');
-  if (!session) redirect(302, '/auth/login');
-};
-```
+Wrap in try/catch — the session may already be expired.
 
 ### Appwrite Console Setup
 
-1. **Auth → Settings → Security**: Enable Magic URL authentication
-2. **Overview → Integrations → Platforms**: Add a Web platform with your domain (e.g., `resume-site-theodore.appwrite.network`)
-
-### Email Subject Formatting
-
-The magic link email subject uses your **Appwrite project name**. If the project name contains an apostrophe (e.g., `Theo's Resume Site`), Appwrite HTML-encodes it in the email subject, producing `Theo&#039;s Resume Site`. To fix this, edit the project name in the Appwrite Console to either:
-- Use a curly apostrophe: `Theo\u2019s Resume Site`
-- Remove the apostrophe: `Theos Resume Site` or `Theo Jones Resume Site`
-
----
+1. Auth → Settings → Security: Enable Magic URL
+2. Overview → Integrations → Platforms: Add Web platform with your domain
 
 ## Svelte 5 Patterns
 
-### Props and Reactivity
+- Use runes: `$props()`, `$state()`, `$derived()`
+- Access data as `data.property`, don't destructure props into `const` (breaks reactivity)
+- Form actions with `use:enhance` for CRUD without client-side JS
+- Every `<label>` needs an associated control (`for`/`id` pair)
 
-Svelte 5 uses runes (`$props`, `$state`, `$derived`) instead of Svelte 4's reactive declarations.
+## Rendering Markdown/HTML
 
-```svelte
-<script lang="ts">
-  // Props from server load function
-  let { data } = $props();
+When using `marked` or similar to render user content via `{@html}`:
+- If content is from trusted users only (e.g. single admin), this is acceptable without sanitization
+- If content could come from untrusted users, pipe through `sanitize-html` or `isomorphic-dompurify` server-side before returning from load functions
+- For external links, use `rel="noopener noreferrer"` with `target="_blank"`
 
-  // Derived values (reactive — updates when data changes)
-  let fullName = $derived(data.profile?.full_name || 'Default');
+## CSS Setup
 
-  // Local state
-  let openSection = $state<string | null>('profile');
-</script>
+```css
+/* src/app.css */
+@import 'tailwindcss';
+@import '@skeletonlabs/skeleton';
+@import '@skeletonlabs/skeleton-svelte';
+@custom-variant dark (&:is(.dark *));
 ```
 
-**Avoid destructuring props into `const`** — this captures the initial value and triggers `state_referenced_locally` warnings:
+Do NOT import Skeleton theme CSS files — the base import is sufficient. Theme CSS imports break Tailwind v4 processing.
 
-```svelte
-<!-- BAD: captures initial value only -->
-const { profile, workExperiences } = data;
+## Deployment Troubleshooting
 
-<!-- GOOD: access via data.property (reactive) -->
-{#each data.workExperiences as exp}
-```
-
-### Form Actions
-
-SvelteKit form actions handle CRUD without client-side JS:
-
-```typescript
-// +page.server.ts
-export const actions: Actions = {
-  updateProfile: async ({ request }) => {
-    const formData = await request.formData();
-    const name = formData.get('full_name') as string;
-    // ... call Appwrite
-    return { message: 'Saved!' };
-  }
-};
-```
-
-```svelte
-<!-- +page.svelte -->
-<form method="POST" action="?/updateProfile" use:enhance>
-  <input name="full_name" value={data.profile?.full_name || ''} />
-  <button type="submit">Save</button>
-</form>
-```
-
-### A11y Labels
-
-Svelte 5 enforces `a11y_label_has_associated_control`. Every `<label>` must be associated with a form control:
-
-```svelte
-<!-- Option 1: for/id pair -->
-<label for="name">Name</label>
-<input id="name" name="name" />
-
-<!-- Option 2: for dynamic IDs in loops -->
-<label for="field-{item.$id}">Field</label>
-<input id="field-{item.$id}" name="field" />
-
-<!-- Option 3: use <span> for labels that can't associate (e.g., wrapping a custom component) -->
-<span class="label-style">Description</span>
-<TiptapEditor name="description" content="" />
-```
-
----
-
-## Tiptap Rich Text Editor
-
-### Component Pattern
-
-```svelte
-<!-- src/lib/components/TiptapEditor.svelte -->
-<script lang="ts">
-  import { onMount, onDestroy } from 'svelte';
-  import { Editor } from '@tiptap/core';
-  import StarterKit from '@tiptap/starter-kit';
-  import Link from '@tiptap/extension-link';
-
-  let props: {
-    content?: string;
-    name: string;
-    onupdate?: (html: string) => void;
-  } = $props();
-
-  let element: HTMLDivElement;
-  let editor = $state<Editor | undefined>(undefined);
-  let internalHtml = $state(props.content || '');
-  let hiddenValue = $derived(internalHtml);
-
-  onMount(() => {
-    editor = new Editor({
-      element,
-      extensions: [
-        StarterKit.configure({ heading: false, codeBlock: false, blockquote: false, horizontalRule: false, code: false }),
-        Link.configure({ openOnClick: false })
-      ],
-      content: props.content || '',
-      onTransaction: () => { editor = editor; },
-      onUpdate: ({ editor: e }) => {
-        internalHtml = e.getHTML();
-        props.onupdate?.(internalHtml);
-      }
-    });
-  });
-
-  onDestroy(() => { editor?.destroy(); });
-</script>
-
-<div bind:this={element}></div>
-<input type="hidden" name={props.name} value={hiddenValue} />
-```
-
-Key points:
-- Uses a hidden `<input>` to sync HTML content for form submission
-- `editor` must be `$state` for toolbar reactivity
-- Content initialization is intentionally one-time (editor manages its own state)
-
----
-
-## Deployment to Appwrite Sites
-
-### Prerequisites
-
-1. GitHub repo (Appwrite Sites connects to GitHub)
-2. Appwrite Cloud project
-3. `adapter-node` configured in `svelte.config.js`
-
-### Steps
-
-1. **Appwrite Console → Sites → Create Site → Connect Git Repository**
-2. Select your GitHub repo and branch (`main`)
-3. Build settings (auto-detected for SvelteKit):
-   - Install command: `npm install`
-   - Build command: `npm run build`
-   - Output directory: `build`
-4. **Add environment variables** — all 5 vars listed above
-5. Deploy
-
-### Auto-Deploy
-
-Every push to the connected branch triggers a rebuild and redeploy automatically.
-
-### Troubleshooting Deployment
-
-| Symptom | Cause | Fix |
-|---------|-------|-----|
-| Build fails: "X is not exported by $env/static/public" | `$env/static/*` can't read env vars at build time on Appwrite Sites | Switch to `$env/dynamic/*` |
-| Data loads locally but not deployed | Missing Appwrite database indexes | Create indexes for all `Query.orderAsc/orderDesc/equal` fields |
-| Data returns null/empty on deployed site | Env var name has trailing space or typo | Delete and recreate the env var in Appwrite Console |
-| Profile loads but lists don't | Lists use `Query.orderAsc('sort_order')` which requires an index | Create a `key` index on `sort_order` for each collection |
-| 404 on API routes | Old deployment cached; new build not deployed yet | Wait for build to finish; check build logs |
-| Auth callback fails | Site domain not added to Appwrite Web Platform | Add domain in Console → Overview → Integrations → Platforms |
-
-### Debug Endpoint (Temporary)
-
-Add this to verify env vars and data loading on the deployed server:
-
-```typescript
-// src/routes/api/debug/+server.ts
-import { json } from '@sveltejs/kit';
-
-export async function GET() {
-  return json({
-    processEnv: {
-      hasApiKey: !!process.env.APPWRITE_API_KEY,
-      databaseId: process.env.APPWRITE_DATABASE_ID || 'MISSING',
-      endpoint: process.env.PUBLIC_APPWRITE_ENDPOINT || 'MISSING',
-      projectId: process.env.PUBLIC_APPWRITE_PROJECT_ID || 'MISSING'
-    },
-    allAppwriteKeys: Object.keys(process.env).filter(k => k.includes('APPWRITE'))
-  });
-}
-```
-
-**Remove this endpoint before going to production** — it exposes configuration details.
-
----
-
-## Appwrite Sites Built-in Environment Variables
-
-Appwrite Sites automatically injects these variables at runtime (no need to set them):
-
-| Variable | Description |
-|----------|-------------|
-| `APPWRITE_SITE_NAME` | Site name |
-| `APPWRITE_SITE_ID` | Site ID |
-| `APPWRITE_SITE_PROJECT_ID` | Project ID (alternative to setting your own) |
-| `APPWRITE_SITE_API_ENDPOINT` | API endpoint (alternative to setting your own) |
-| `APPWRITE_REGION` | Deployment region |
-| `APPWRITE_VERSION` | Appwrite version |
-| `APPWRITE_VCS_COMMIT_HASH` | Git commit hash of current deployment |
-| `APPWRITE_VCS_REPOSITORY_BRANCH` | Git branch name |
-| `APPWRITE_DEPLOYMENT_TYPE` | Deployment type |
-
-You could use `APPWRITE_SITE_PROJECT_ID` and `APPWRITE_SITE_API_ENDPOINT` instead of setting custom env vars for the project ID and endpoint.
-
----
-
-## Project Structure Reference
-
-```
-src/
-  lib/
-    server/appwrite.ts     # Server-side Appwrite (node-appwrite, API key)
-    appwrite.ts            # Client-side Appwrite (auth only)
-    components/
-      TiptapEditor.svelte  # Rich text editor component
-  routes/
-    +page.server.ts        # Public page data loader
-    +page.svelte           # Public page
-    +layout.svelte         # Root layout (imports app.css)
-    admin/
-      +layout.server.ts    # Auth guard
-      +layout.svelte       # Admin chrome
-      +page.server.ts      # Admin form actions (CRUD)
-      +page.svelte         # Admin dashboard
-    auth/
-      login/+page.svelte   # Magic link login form
-      callback/+page.server.ts  # Session creation
-      logout/+page.server.ts    # Session destruction
-  app.css                  # Tailwind + Skeleton imports
-  app.html                 # HTML shell
-```
-
----
+| Symptom | Fix |
+|---------|-----|
+| Build fails re: `$env/static` | Switch to `$env/dynamic/*` |
+| Data loads locally but not deployed | Create indexes for queried fields |
+| Env vars return undefined | Check for trailing spaces in Console; read inside functions not module level |
+| Auth callback fails | Add domain to Appwrite Web Platform |
 
 ## Commands
 
 ```bash
-npm run dev        # Start dev server
-npm run build      # Production build
-npm run preview    # Preview production build locally
+npm run dev      # Dev server
+npm run build    # Production build (adapter-node)
+npm run preview  # Preview build locally
 ```

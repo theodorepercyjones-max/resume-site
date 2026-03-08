@@ -8,6 +8,8 @@ export const load: PageServerLoad = async ({ url, cookies }) => {
 	const userId = url.searchParams.get('userId');
 	const secret = url.searchParams.get('secret');
 
+	const isLocalhost = url.hostname === 'localhost' || url.hostname === '127.0.0.1';
+
 	if (!userId || !secret) {
 		redirect(302, '/auth/login?error=invalid');
 	}
@@ -51,7 +53,7 @@ export const load: PageServerLoad = async ({ url, cookies }) => {
 			path: '/',
 			httpOnly: true,
 			sameSite: 'lax',
-			secure: false,
+			secure: !isLocalhost,
 			maxAge: 60 * 60 * 24 * 7 // 7 days
 		});
 
