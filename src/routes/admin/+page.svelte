@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
-	import TiptapEditor from '$lib/components/TiptapEditor.svelte';
+	import MarkdownEditor from '$lib/components/MarkdownEditor.svelte';
 
 	let { data, form } = $props();
 
@@ -65,7 +65,7 @@
 				</div>
 				<div>
 					<span class="block text-sm font-semibold text-slate-600 mb-1">Summary</span>
-					<TiptapEditor name="summary" content={data.profile?.summary || ''} />
+					<MarkdownEditor name="summary" content={data.profile?.summary || ''} />
 				</div>
 				<button type="submit" class="bg-[var(--color-accent)] hover:bg-amber-700 text-white font-semibold px-6 py-2 rounded-md text-sm transition-colors">Save Profile</button>
 			</form>
@@ -115,7 +115,7 @@
 						</div>
 						<div>
 							<span class="block text-xs font-semibold text-slate-600 mb-1">Description</span>
-							<TiptapEditor name="description" content={exp.description || ''} />
+							<MarkdownEditor name="description" content={exp.description || ''} />
 						</div>
 						<div>
 							<label for="we-sort-{exp.$id}" class="block text-xs font-semibold text-slate-600 mb-1">Sort Order</label>
@@ -162,7 +162,7 @@
 					</div>
 					<div>
 						<span class="block text-xs font-semibold text-slate-600 mb-1">Description</span>
-						<TiptapEditor name="description" content="" />
+						<MarkdownEditor name="description" content="" />
 					</div>
 					<div>
 						<label for="new-we-sort" class="block text-xs font-semibold text-slate-600 mb-1">Sort Order</label>
@@ -203,7 +203,7 @@
 						</div>
 						<div>
 							<span class="block text-xs font-semibold text-slate-600 mb-1">Description</span>
-							<TiptapEditor name="description" content={work.description || ''} />
+							<MarkdownEditor name="description" content={work.description || ''} />
 						</div>
 						<div>
 							<label for="fw-testimonial-{work.$id}" class="block text-xs font-semibold text-slate-600 mb-1">Testimonial</label>
@@ -245,7 +245,7 @@
 					</div>
 					<div>
 						<span class="block text-xs font-semibold text-slate-600 mb-1">Description</span>
-						<TiptapEditor name="description" content="" />
+						<MarkdownEditor name="description" content="" />
 					</div>
 					<div>
 						<label for="new-fw-testimonial" class="block text-xs font-semibold text-slate-600 mb-1">Testimonial</label>
@@ -310,7 +310,7 @@
 						</div>
 						<div>
 							<span class="block text-xs font-semibold text-slate-600 mb-1">Details</span>
-							<TiptapEditor name="details" content={edu.details || ''} />
+							<MarkdownEditor name="details" content={edu.details || ''} />
 						</div>
 						<div>
 							<label for="edu-sort-{edu.$id}" class="block text-xs font-semibold text-slate-600 mb-1">Sort Order</label>
@@ -356,7 +356,7 @@
 					</div>
 					<div>
 						<span class="block text-xs font-semibold text-slate-600 mb-1">Details</span>
-						<TiptapEditor name="details" content="" />
+						<MarkdownEditor name="details" content="" />
 					</div>
 					<div>
 						<label for="new-edu-sort" class="block text-xs font-semibold text-slate-600 mb-1">Sort Order</label>

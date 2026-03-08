@@ -1,14 +1,14 @@
 # Resume Site - Theodore Jones
 
 ## Project Overview
-Personal resume/portfolio site. SvelteKit frontend/backend, Appwrite BaaS (database, auth), Skeleton UI + Tailwind CSS, Tiptap rich text editor.
+Personal resume/portfolio site. SvelteKit frontend/backend, Appwrite BaaS (database, auth), Skeleton UI + Tailwind CSS, EasyMDE markdown editor.
 
 ## Tech Stack
 - **Framework**: SvelteKit (Svelte 5, TypeScript)
 - **Database/Auth**: Appwrite Cloud (NYC region)
 - **Styling**: Tailwind CSS v4 + Skeleton UI v4
-- **Rich Text**: Tiptap (bold, italic, lists, links, clear)
-- **VCS**: Git + GitLab
+- **Markdown Editor**: EasyMDE (bold, italic, lists, links, preview) + marked (server-side rendering)
+- **VCS**: Git + GitHub
 - **Hosting**: Appwrite Sites (SSR via adapter-node)
 
 ## Project Structure
@@ -18,7 +18,7 @@ src/
     server/appwrite.ts     # Server-side Appwrite (node-appwrite, API key)
     appwrite.ts            # Client-side Appwrite (auth)
     components/
-      TiptapEditor.svelte  # Rich text editor component
+      MarkdownEditor.svelte # EasyMDE markdown editor component
   routes/
     +page.server.ts        # Public page data loader
     +page.svelte           # Public resume page
@@ -50,7 +50,7 @@ src/
 - Collections: profile, work_experience, freelance_work, education, todos
 
 ## Key Conventions
-- Rich text fields (summary, descriptions, details): Tiptap editor with restricted toolbar
+- Markdown fields (summary, descriptions, details): EasyMDE editor, stored as markdown, rendered to HTML server-side via `marked`
 - Short text fields (names, locations, dates): plain text inputs
 - Freelance status: `accepting` or `not_accepting`
 - Admin auth: Appwrite Magic URL (email link), session stored in httpOnly cookie
