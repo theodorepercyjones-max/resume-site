@@ -4,6 +4,49 @@
 	let fullName = $derived(data.profile?.full_name || 'Theodore Jones');
 	let title = $derived(data.profile?.title || 'IT Professional');
 	let location = $derived(data.profile?.location || 'Willow Grove, PA, USA');
+
+	function parseDateApprox(s: string): number {
+		const months: Record<string, number> = {
+			jan:0,feb:1,mar:2,apr:3,may:4,jun:5,jul:6,aug:7,sep:8,oct:9,nov:10,dec:11
+		};
+		const parts = s.trim().toLowerCase().split(/\s+/);
+		const m = Object.entries(months).find(([k]) => parts[0]?.startsWith(k));
+		const y = parseInt(parts[parts.length - 1]);
+		return (!isNaN(y) && m) ? y * 12 + m[1] : -1;
+	}
+
+	let freelanceDateRange = $derived.by(() => {
+		const starts: string[] = [];
+		const ends: string[] = [];
+		for (const w of data.freelanceWorks) {
+			if (w.start_date) starts.push(w.start_date);
+			if (w.end_date) ends.push(w.end_date);
+		}
+		if (starts.length === 0) return '';
+		const earliest = starts.reduce((a, b) => parseDateApprox(a) <= parseDateApprox(b) ? a : b);
+		const latest = ends.length > 0
+			? ends.reduce((a, b) => parseDateApprox(a) >= parseDateApprox(b) ? a : b)
+			: 'Present';
+		return `${earliest} \u2013 ${latest}`;
+	});
+
+	let bridgeIndex = $derived.by(() => {
+		if (!freelanceDateRange || data.freelanceWorks.length === 0) return -1;
+		const allStarts = data.freelanceWorks
+			.filter((w: any) => w.start_date)
+			.map((w: any) => parseDateApprox(w.start_date));
+		const freelanceStart = allStarts.length > 0 ? Math.min(...allStarts) : -1;
+		if (freelanceStart === -1) return -1;
+
+		for (let i = 0; i < data.workExperiences.length - 1; i++) {
+			const exp = data.workExperiences[i];
+			const endVal = exp.end_date ? parseDateApprox(exp.end_date) : -1;
+			if (endVal !== -1 && endVal >= freelanceStart) {
+				return i;
+			}
+		}
+		return data.workExperiences.length > 1 ? 1 : -1;
+	});
 </script>
 
 <svelte:head>
@@ -82,6 +125,11 @@
 								<div class="text-slate-600 text-sm">{work.client_name}</div>
 							{/if}
 						</div>
+						{#if work.start_date}
+							<div class="text-slate-400 text-xs whitespace-nowrap">
+								{work.start_date}{#if work.end_date} &ndash; {work.end_date}{:else} &ndash; Present{/if}
+							</div>
+						{/if}
 					</div>
 					{#if work.description}
 						<div class="mt-3 text-slate-700 text-sm prose max-w-none prose-li:my-0.5 prose-ul:my-1 prose-p:my-1">{@html work.description}</div>
@@ -106,7 +154,7 @@
 				<span class="w-1 h-6 bg-[var(--color-accent)] rounded-sm"></span>
 				<h2 class="font-[var(--font-serif)] text-2xl text-[var(--color-navy)] m-0">Work Experience</h2>
 			</div>
-			{#each data.workExperiences as exp}
+			{#each data.workExperiences as exp, i}
 				<div class="bg-white rounded-lg p-6 mb-4 shadow-sm border-l-3 border-transparent hover:shadow-md hover:border-l-[var(--color-accent)] transition-all">
 					<div class="flex justify-between items-start flex-wrap gap-2 mb-2">
 						<div>
@@ -124,6 +172,15 @@
 						<div class="mt-3 text-slate-700 text-sm prose max-w-none prose-li:my-0.5 prose-ul:my-1 prose-p:my-1">{@html exp.description}</div>
 					{/if}
 				</div>
+				{#if i === bridgeIndex && freelanceDateRange}
+					<div class="flex items-center gap-3 my-4 px-6">
+						<div class="flex-1 border-t border-dashed border-slate-300"></div>
+						<span class="text-slate-400 text-xs italic whitespace-nowrap">
+							Freelance consulting ({freelanceDateRange}) — see above
+						</span>
+						<div class="flex-1 border-t border-dashed border-slate-300"></div>
+					</div>
+				{/if}
 			{/each}
 		</section>
 	{/if}

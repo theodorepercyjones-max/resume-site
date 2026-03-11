@@ -269,6 +269,16 @@
 								<label for="fw-client-{work.$id}" class="block text-xs font-semibold text-slate-600 mb-1">Client Name</label>
 								<input type="text" id="fw-client-{work.$id}" name="client_name" value={work.client_name || ''} class="w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:border-[var(--color-accent)] focus:outline-none focus:ring-2 focus:ring-amber-100" />
 							</div>
+							<div class="grid grid-cols-2 gap-3">
+								<div>
+									<label for="fw-start-{work.$id}" class="block text-xs font-semibold text-slate-600 mb-1">Start</label>
+									<input type="text" id="fw-start-{work.$id}" name="start_date" value={work.start_date || ''} class="w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:border-[var(--color-accent)] focus:outline-none focus:ring-2 focus:ring-amber-100" />
+								</div>
+								<div>
+									<label for="fw-end-{work.$id}" class="block text-xs font-semibold text-slate-600 mb-1">End</label>
+									<input type="text" id="fw-end-{work.$id}" name="end_date" value={work.end_date || ''} class="w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:border-[var(--color-accent)] focus:outline-none focus:ring-2 focus:ring-amber-100" />
+								</div>
+							</div>
 						</div>
 						<div>
 							<span class="block text-xs font-semibold text-slate-600 mb-1">Description</span>
@@ -305,6 +315,16 @@
 						<div>
 							<label for="new-fw-client" class="block text-xs font-semibold text-slate-600 mb-1">Client Name</label>
 							<input type="text" id="new-fw-client" name="client_name" class="w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:border-[var(--color-accent)] focus:outline-none focus:ring-2 focus:ring-amber-100" />
+						</div>
+						<div class="grid grid-cols-2 gap-3">
+							<div>
+								<label for="new-fw-start" class="block text-xs font-semibold text-slate-600 mb-1">Start</label>
+								<input type="text" id="new-fw-start" name="start_date" class="w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:border-[var(--color-accent)] focus:outline-none focus:ring-2 focus:ring-amber-100" />
+							</div>
+							<div>
+								<label for="new-fw-end" class="block text-xs font-semibold text-slate-600 mb-1">End</label>
+								<input type="text" id="new-fw-end" name="end_date" class="w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:border-[var(--color-accent)] focus:outline-none focus:ring-2 focus:ring-amber-100" />
+							</div>
 						</div>
 					</div>
 					<div>

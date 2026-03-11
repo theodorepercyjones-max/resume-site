@@ -115,6 +115,8 @@ export const actions: Actions = {
 			description: form.get('description') as string || '',
 			testimonial: form.get('testimonial') as string || '',
 			portfolio_url: form.get('portfolio_url') as string || '',
+			start_date: form.get('start_date') as string || '',
+			end_date: form.get('end_date') as string || '',
 			sort_order: parseInt(form.get('sort_order') as string || '0')
 		};
 
