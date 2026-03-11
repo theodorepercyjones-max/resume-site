@@ -100,10 +100,16 @@
 
 	<!-- Freelance Work -->
 	{#if data.freelanceWorks.length > 0}
+		{@const work = data.freelanceWorks[0]}
 		<section class="my-10">
 			<div class="flex items-center gap-2 mb-5 pb-2 border-b-2 border-slate-200">
 				<span class="w-1 h-6 bg-[var(--color-accent)] rounded-sm"></span>
 				<h2 class="font-[var(--font-serif)] text-2xl text-[var(--color-navy)] m-0">Freelance Work</h2>
+				{#if work.start_date}
+					<span class="ml-auto text-slate-400 text-xs whitespace-nowrap">
+						{work.start_date}{#if work.end_date} &ndash; {work.end_date}{:else} &ndash; Present{/if}
+					</span>
+				{/if}
 			</div>
 
 			{#if data.profile?.freelance_status === 'not_accepting'}
@@ -116,34 +122,11 @@
 				</div>
 			{/if}
 
-			{#each data.freelanceWorks as work}
-				<div class="bg-white rounded-lg p-6 mb-4 shadow-sm border-l-3 border-transparent hover:shadow-md hover:border-l-[var(--color-accent)] transition-all">
-					<div class="flex justify-between items-start flex-wrap gap-2 mb-2">
-						<div>
-							<h3 class="font-[var(--font-serif)] font-bold text-lg text-[var(--color-navy)] m-0">{work.project_name}</h3>
-							{#if work.client_name}
-								<div class="text-slate-600 text-sm">{work.client_name}</div>
-							{/if}
-						</div>
-						{#if work.start_date}
-							<div class="text-slate-400 text-xs whitespace-nowrap">
-								{work.start_date}{#if work.end_date} &ndash; {work.end_date}{:else} &ndash; Present{/if}
-							</div>
-						{/if}
-					</div>
-					{#if work.description}
-						<div class="mt-3 text-slate-700 text-sm prose max-w-none prose-li:my-0.5 prose-ul:my-1 prose-p:my-1">{@html work.description}</div>
-					{/if}
-					{#if work.testimonial}
-						<div class="border-l-3 border-[var(--color-accent)] pl-4 mt-3 italic text-slate-600">{work.testimonial}</div>
-					{/if}
-					{#if work.portfolio_url}
-						<div class="mt-2 text-sm">
-							<a href={work.portfolio_url} target="_blank" rel="noopener" class="text-[var(--color-accent)] hover:text-[var(--color-navy)]">View Project &rarr;</a>
-						</div>
-					{/if}
+			{#if work.description}
+				<div class="bg-white rounded-lg p-6 shadow-sm text-slate-700 text-sm prose max-w-none prose-li:my-0.5 prose-ul:my-1 prose-p:my-1">
+					{@html work.description}
 				</div>
-			{/each}
+			{/if}
 		</section>
 	{/if}
 

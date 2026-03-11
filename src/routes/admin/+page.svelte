@@ -227,121 +227,50 @@
 		class="w-full text-left px-6 py-4 font-semibold text-[var(--color-navy)] flex justify-between items-center hover:bg-slate-50"
 		onclick={() => toggle('freelance')}
 	>
-		Freelance Work ({data.freelanceWorks.length})
+		Freelance Work
 		<span class="text-slate-400 text-sm">{openSection === 'freelance' ? '−' : '+'}</span>
 	</button>
 	{#if openSection === 'freelance'}
 		<div class="px-6 pb-6 border-t border-slate-100">
-			{#each data.freelanceWorks as work, i (work.$id)}
-				<div class="border border-slate-100 rounded-lg p-4 mt-4">
-					<div class="flex items-center justify-between mb-3">
-						<span class="text-xs text-slate-400">#{i + 1}</span>
-						<div class="flex gap-1">
-							{#if i > 0}
-								<form method="POST" action="?/moveFreelanceWork" use:enhance>
-									<input type="hidden" name="doc_id" value={work.$id} />
-									<input type="hidden" name="direction" value="up" />
-									<button type="submit" class="w-7 h-7 flex items-center justify-center rounded border border-slate-200 hover:bg-slate-100 text-slate-500 hover:text-slate-700" title="Move up">
-										<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 15l-6-6-6 6"/></svg>
-									</button>
-								</form>
-							{/if}
-							{#if i < data.freelanceWorks.length - 1}
-								<form method="POST" action="?/moveFreelanceWork" use:enhance>
-									<input type="hidden" name="doc_id" value={work.$id} />
-									<input type="hidden" name="direction" value="down" />
-									<button type="submit" class="w-7 h-7 flex items-center justify-center rounded border border-slate-200 hover:bg-slate-100 text-slate-500 hover:text-slate-700" title="Move down">
-										<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg>
-									</button>
-								</form>
-							{/if}
+			{#if data.freelanceWorks.length > 0}
+				{@const work = data.freelanceWorks[0]}
+				<form method="POST" action="?/saveFreelanceWork" use:enhance class="space-y-4 mt-4">
+					<input type="hidden" name="doc_id" value={work.$id} />
+					<div class="grid grid-cols-2 gap-3">
+						<div>
+							<label for="fw-start" class="block text-xs font-semibold text-slate-600 mb-1">Start</label>
+							<input type="text" id="fw-start" name="start_date" value={work.start_date || ''} class="w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:border-[var(--color-accent)] focus:outline-none focus:ring-2 focus:ring-amber-100" />
+						</div>
+						<div>
+							<label for="fw-end" class="block text-xs font-semibold text-slate-600 mb-1">End</label>
+							<input type="text" id="fw-end" name="end_date" value={work.end_date || ''} class="w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:border-[var(--color-accent)] focus:outline-none focus:ring-2 focus:ring-amber-100" />
 						</div>
 					</div>
-					<form method="POST" action="?/saveFreelanceWork" use:enhance class="space-y-3">
-						<input type="hidden" name="doc_id" value={work.$id} />
-						<input type="hidden" name="sort_order" value={work.sort_order ?? i} />
-						<div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-							<div>
-								<label for="fw-project-{work.$id}" class="block text-xs font-semibold text-slate-600 mb-1">Project Name</label>
-								<input type="text" id="fw-project-{work.$id}" name="project_name" value={work.project_name} class="w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:border-[var(--color-accent)] focus:outline-none focus:ring-2 focus:ring-amber-100" />
-							</div>
-							<div>
-								<label for="fw-client-{work.$id}" class="block text-xs font-semibold text-slate-600 mb-1">Client Name</label>
-								<input type="text" id="fw-client-{work.$id}" name="client_name" value={work.client_name || ''} class="w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:border-[var(--color-accent)] focus:outline-none focus:ring-2 focus:ring-amber-100" />
-							</div>
-							<div class="grid grid-cols-2 gap-3">
-								<div>
-									<label for="fw-start-{work.$id}" class="block text-xs font-semibold text-slate-600 mb-1">Start</label>
-									<input type="text" id="fw-start-{work.$id}" name="start_date" value={work.start_date || ''} class="w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:border-[var(--color-accent)] focus:outline-none focus:ring-2 focus:ring-amber-100" />
-								</div>
-								<div>
-									<label for="fw-end-{work.$id}" class="block text-xs font-semibold text-slate-600 mb-1">End</label>
-									<input type="text" id="fw-end-{work.$id}" name="end_date" value={work.end_date || ''} class="w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:border-[var(--color-accent)] focus:outline-none focus:ring-2 focus:ring-amber-100" />
-								</div>
-							</div>
+					<div>
+						<span class="block text-xs font-semibold text-slate-600 mb-1">Description</span>
+						<MarkdownEditor name="description" content={work.description || ''} />
+					</div>
+					<button type="submit" class="bg-[var(--color-accent)] hover:bg-amber-700 text-white font-semibold px-6 py-2 rounded-md text-sm transition-colors">Save Freelance Work</button>
+				</form>
+			{:else}
+				<form method="POST" action="?/saveFreelanceWork" use:enhance class="space-y-4 mt-4">
+					<div class="grid grid-cols-2 gap-3">
+						<div>
+							<label for="fw-start" class="block text-xs font-semibold text-slate-600 mb-1">Start</label>
+							<input type="text" id="fw-start" name="start_date" class="w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:border-[var(--color-accent)] focus:outline-none focus:ring-2 focus:ring-amber-100" />
 						</div>
 						<div>
-							<span class="block text-xs font-semibold text-slate-600 mb-1">Description</span>
-							<MarkdownEditor name="description" content={work.description || ''} />
-						</div>
-						<div>
-							<label for="fw-testimonial-{work.$id}" class="block text-xs font-semibold text-slate-600 mb-1">Testimonial</label>
-							<textarea id="fw-testimonial-{work.$id}" name="testimonial" rows="2" class="w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:border-[var(--color-accent)] focus:outline-none focus:ring-2 focus:ring-amber-100">{work.testimonial || ''}</textarea>
-						</div>
-						<div>
-							<label for="fw-url-{work.$id}" class="block text-xs font-semibold text-slate-600 mb-1">Portfolio URL</label>
-							<input type="url" id="fw-url-{work.$id}" name="portfolio_url" value={work.portfolio_url || ''} class="w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:border-[var(--color-accent)] focus:outline-none focus:ring-2 focus:ring-amber-100" />
-						</div>
-						<div class="flex gap-2">
-							<button type="submit" class="bg-[var(--color-accent)] hover:bg-amber-700 text-white font-semibold px-4 py-1.5 rounded-md text-sm transition-colors">Save</button>
-						</div>
-					</form>
-					<form method="POST" action="?/deleteFreelanceWork" use:enhance class="mt-2">
-						<input type="hidden" name="doc_id" value={work.$id} />
-						<button type="submit" class="text-red-500 hover:text-red-700 text-xs" onclick={(e) => { if (!confirm('Delete this entry?')) e.preventDefault(); }}>Delete</button>
-					</form>
-				</div>
-			{/each}
-
-			<details class="mt-4">
-				<summary class="cursor-pointer text-sm text-[var(--color-accent)] hover:text-amber-700 font-semibold">+ Add Freelance Work</summary>
-				<form method="POST" action="?/saveFreelanceWork" use:enhance class="space-y-3 mt-3 border border-slate-100 rounded-lg p-4">
-					<input type="hidden" name="sort_order" value={data.freelanceWorks.length} />
-					<div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-						<div>
-							<label for="new-fw-project" class="block text-xs font-semibold text-slate-600 mb-1">Project Name</label>
-							<input type="text" id="new-fw-project" name="project_name" required class="w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:border-[var(--color-accent)] focus:outline-none focus:ring-2 focus:ring-amber-100" />
-						</div>
-						<div>
-							<label for="new-fw-client" class="block text-xs font-semibold text-slate-600 mb-1">Client Name</label>
-							<input type="text" id="new-fw-client" name="client_name" class="w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:border-[var(--color-accent)] focus:outline-none focus:ring-2 focus:ring-amber-100" />
-						</div>
-						<div class="grid grid-cols-2 gap-3">
-							<div>
-								<label for="new-fw-start" class="block text-xs font-semibold text-slate-600 mb-1">Start</label>
-								<input type="text" id="new-fw-start" name="start_date" class="w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:border-[var(--color-accent)] focus:outline-none focus:ring-2 focus:ring-amber-100" />
-							</div>
-							<div>
-								<label for="new-fw-end" class="block text-xs font-semibold text-slate-600 mb-1">End</label>
-								<input type="text" id="new-fw-end" name="end_date" class="w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:border-[var(--color-accent)] focus:outline-none focus:ring-2 focus:ring-amber-100" />
-							</div>
+							<label for="fw-end" class="block text-xs font-semibold text-slate-600 mb-1">End</label>
+							<input type="text" id="fw-end" name="end_date" class="w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:border-[var(--color-accent)] focus:outline-none focus:ring-2 focus:ring-amber-100" />
 						</div>
 					</div>
 					<div>
 						<span class="block text-xs font-semibold text-slate-600 mb-1">Description</span>
 						<MarkdownEditor name="description" content="" />
 					</div>
-					<div>
-						<label for="new-fw-testimonial" class="block text-xs font-semibold text-slate-600 mb-1">Testimonial</label>
-						<textarea id="new-fw-testimonial" name="testimonial" rows="2" class="w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:border-[var(--color-accent)] focus:outline-none focus:ring-2 focus:ring-amber-100"></textarea>
-					</div>
-					<div>
-						<label for="new-fw-url" class="block text-xs font-semibold text-slate-600 mb-1">Portfolio URL</label>
-						<input type="url" id="new-fw-url" name="portfolio_url" class="w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:border-[var(--color-accent)] focus:outline-none focus:ring-2 focus:ring-amber-100" />
-					</div>
-					<button type="submit" class="bg-[var(--color-accent)] hover:bg-amber-700 text-white font-semibold px-4 py-1.5 rounded-md text-sm transition-colors">Add</button>
+					<button type="submit" class="bg-[var(--color-accent)] hover:bg-amber-700 text-white font-semibold px-6 py-2 rounded-md text-sm transition-colors">Save Freelance Work</button>
 				</form>
-			</details>
+			{/if}
 		</div>
 	{/if}
 </div>

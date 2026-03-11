@@ -1,7 +1,7 @@
 import {
 	getProfile, createProfile, updateProfile,
 	getWorkExperiences, createWorkExperience, updateWorkExperience, deleteWorkExperience,
-	getFreelanceWorks, createFreelanceWork, updateFreelanceWork, deleteFreelanceWork,
+	getFreelanceWorks, createFreelanceWork, updateFreelanceWork,
 	getEducations, createEducation, updateEducation, deleteEducation
 } from '$lib/server/appwrite';
 import type { PageServerLoad, Actions } from './$types';
@@ -110,61 +110,28 @@ export const actions: Actions = {
 		const form = await request.formData();
 		const docId = form.get('doc_id') as string;
 		const data = {
-			project_name: form.get('project_name') as string || '',
-			client_name: form.get('client_name') as string || '',
 			description: form.get('description') as string || '',
-			testimonial: form.get('testimonial') as string || '',
-			portfolio_url: form.get('portfolio_url') as string || '',
 			start_date: form.get('start_date') as string || '',
-			end_date: form.get('end_date') as string || '',
-			sort_order: parseInt(form.get('sort_order') as string || '0')
+			end_date: form.get('end_date') as string || ''
 		};
 
 		try {
 			if (docId) {
 				await updateFreelanceWork(docId, data);
 			} else {
-				await createFreelanceWork(data);
+				await createFreelanceWork({
+					...data,
+					project_name: 'Freelance Work',
+					client_name: '',
+					testimonial: '',
+					portfolio_url: '',
+					sort_order: 0
+				});
 			}
 			return { success: true, message: 'Freelance work saved.' };
 		} catch (e) {
 			console.error('saveFreelanceWork action error:', e);
 			return { success: false, message: `Error saving freelance work: ${e instanceof Error ? e.message : e}` };
-		}
-	},
-
-	deleteFreelanceWork: async ({ request }) => {
-		const form = await request.formData();
-		const docId = form.get('doc_id') as string;
-		try {
-			if (docId) await deleteFreelanceWork(docId);
-			return { success: true, message: 'Freelance work deleted.' };
-		} catch (e) {
-			console.error('deleteFreelanceWork action error:', e);
-			return { success: false, message: `Error deleting freelance work: ${e instanceof Error ? e.message : e}` };
-		}
-	},
-
-	moveFreelanceWork: async ({ request }) => {
-		const form = await request.formData();
-		const docId = form.get('doc_id') as string;
-		const direction = form.get('direction') as string;
-		try {
-			const items = await getFreelanceWorks();
-			const idx = items.findIndex(i => i.$id === docId);
-			const swapIdx = direction === 'up' ? idx - 1 : idx + 1;
-			if (idx >= 0 && swapIdx >= 0 && swapIdx < items.length) {
-				const currentOrder = items[idx].sort_order ?? idx;
-				const swapOrder = items[swapIdx].sort_order ?? swapIdx;
-				await Promise.all([
-					updateFreelanceWork(docId, { sort_order: swapOrder }),
-					updateFreelanceWork(items[swapIdx].$id, { sort_order: currentOrder })
-				]);
-			}
-			return { success: true };
-		} catch (e) {
-			console.error('moveFreelanceWork error:', e);
-			return { success: false, message: `Error reordering: ${e instanceof Error ? e.message : e}` };
 		}
 	},
 
